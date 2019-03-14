@@ -238,6 +238,7 @@ func TestExpressionParsing(t *testing.T) {
 	}
 
 	for name, tcase := range tests {
+		tcase := tcase
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
