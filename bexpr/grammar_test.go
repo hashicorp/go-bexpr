@@ -10,39 +10,39 @@ func TestExpressionParsing(t *testing.T) {
 	type testCase struct {
 		input    string
 		expected Expr
-		err      error
+		err      string
 	}
 
 	tests := map[string]testCase{
 		"Match Equality": {
 			input:    "foo == 3",
 			expected: &MatchExpr{Selector: Selector{"foo"}, Operator: MatchEqual, Value: &Value{Raw: "3"}},
-			err:      nil,
+			err:      "",
 		},
 		"Match Inequality": {
 			input:    "foo != xyz",
 			expected: &MatchExpr{Selector: Selector{"foo"}, Operator: MatchNotEqual, Value: &Value{Raw: "xyz"}},
-			err:      nil,
+			err:      "",
 		},
 		"Match Is Empty": {
 			input:    "list is empty",
 			expected: &MatchExpr{Selector: Selector{"list"}, Operator: MatchIsEmpty, Value: nil},
-			err:      nil,
+			err:      "",
 		},
 		"Match Is Not Empty": {
 			input:    "list is not empty",
 			expected: &MatchExpr{Selector: Selector{"list"}, Operator: MatchIsNotEmpty, Value: nil},
-			err:      nil,
+			err:      "",
 		},
 		"Match In": {
 			input:    "foo in bar",
 			expected: &MatchExpr{Selector: Selector{"bar"}, Operator: MatchIn, Value: &Value{Raw: "foo"}},
-			err:      nil,
+			err:      "",
 		},
 		"Match Not In": {
 			input:    "foo not in bar",
 			expected: &MatchExpr{Selector: Selector{"bar"}, Operator: MatchNotIn, Value: &Value{Raw: "foo"}},
-			err:      nil,
+			err:      "",
 		},
 		"Logical Not": {
 			input: "not prod in tags",
@@ -50,7 +50,7 @@ func TestExpressionParsing(t *testing.T) {
 				Operator: UnaryOpNot,
 				Operand:  &MatchExpr{Selector: Selector{"tags"}, Operator: MatchIn, Value: &Value{Raw: "prod"}},
 			},
-			err: nil,
+			err: "",
 		},
 		"Logical And": {
 			input: "port != 80 and port != 8080",
@@ -59,7 +59,7 @@ func TestExpressionParsing(t *testing.T) {
 				Left:     &MatchExpr{Selector: Selector{"port"}, Operator: MatchNotEqual, Value: &Value{Raw: "80"}},
 				Right:    &MatchExpr{Selector: Selector{"port"}, Operator: MatchNotEqual, Value: &Value{Raw: "8080"}},
 			},
-			err: nil,
+			err: "",
 		},
 		"Logical Or": {
 			input: "port == 80 or port == 443",
@@ -68,47 +68,47 @@ func TestExpressionParsing(t *testing.T) {
 				Left:     &MatchExpr{Selector: Selector{"port"}, Operator: MatchEqual, Value: &Value{Raw: "80"}},
 				Right:    &MatchExpr{Selector: Selector{"port"}, Operator: MatchEqual, Value: &Value{Raw: "443"}},
 			},
-			err: nil,
+			err: "",
 		},
 		"Double Quoted Value (Equal)": {
 			input:    "foo == \"bar\"",
 			expected: &MatchExpr{Selector: Selector{"foo"}, Operator: MatchEqual, Value: &Value{Raw: "bar"}},
-			err:      nil,
+			err:      "",
 		},
 		"Double Quoted Value (Not Equal)": {
 			input:    "foo != \"bar\"",
 			expected: &MatchExpr{Selector: Selector{"foo"}, Operator: MatchNotEqual, Value: &Value{Raw: "bar"}},
-			err:      nil,
+			err:      "",
 		},
 		"Double Quoted Value (In)": {
 			input:    "\"foo\" in bar",
 			expected: &MatchExpr{Selector: Selector{"bar"}, Operator: MatchIn, Value: &Value{Raw: "foo"}},
-			err:      nil,
+			err:      "",
 		},
 		"Double Quoted Value (Not In)": {
 			input:    "\"foo\" not in bar",
 			expected: &MatchExpr{Selector: Selector{"bar"}, Operator: MatchNotIn, Value: &Value{Raw: "foo"}},
-			err:      nil,
+			err:      "",
 		},
 		"Backtick Quoted Value (Equal)": {
 			input:    "foo == `bar`",
 			expected: &MatchExpr{Selector: Selector{"foo"}, Operator: MatchEqual, Value: &Value{Raw: "bar"}},
-			err:      nil,
+			err:      "",
 		},
 		"Backtick Quoted Value (Not Equal)": {
 			input:    "foo != `bar`",
 			expected: &MatchExpr{Selector: Selector{"foo"}, Operator: MatchNotEqual, Value: &Value{Raw: "bar"}},
-			err:      nil,
+			err:      "",
 		},
 		"Backtick Quoted Value (In)": {
 			input:    "`foo` in bar",
 			expected: &MatchExpr{Selector: Selector{"bar"}, Operator: MatchIn, Value: &Value{Raw: "foo"}},
-			err:      nil,
+			err:      "",
 		},
 		"Backtick Quoted Value (Not In)": {
 			input:    "`foo` not in bar",
 			expected: &MatchExpr{Selector: Selector{"bar"}, Operator: MatchNotIn, Value: &Value{Raw: "foo"}},
-			err:      nil,
+			err:      "",
 		},
 		// This is standard boolean expression precedence
 		//
@@ -129,7 +129,7 @@ func TestExpressionParsing(t *testing.T) {
 				},
 				Right: &MatchExpr{Selector: Selector{"list"}, Operator: MatchIsEmpty, Value: nil},
 			},
-			err: nil,
+			err: "",
 		},
 		// not in the absence of parentheses would normally get applied
 		// to a MatchExpr
@@ -150,37 +150,37 @@ func TestExpressionParsing(t *testing.T) {
 					},
 				},
 			},
-			err: nil,
+			err: "",
 		},
 		"Extra Whitespace (Equal)": {
 			input:    "\t\r\n  foo \t\r\n == \t\r\n x \t\r\n",
 			expected: &MatchExpr{Selector: Selector{"foo"}, Operator: MatchEqual, Value: &Value{Raw: "x"}},
-			err:      nil,
+			err:      "",
 		},
 		"Extra Whitespace (Not Equal)": {
 			input:    "\t\r\n  foo \t\r\n != \t\r\n x \t\r\n",
 			expected: &MatchExpr{Selector: Selector{"foo"}, Operator: MatchNotEqual, Value: &Value{Raw: "x"}},
-			err:      nil,
+			err:      "",
 		},
 		"Extra Whitespace (In)": {
 			input:    "\t\r\n  foo \t\r\n in \t\r\n x \t\r\n",
 			expected: &MatchExpr{Selector: Selector{"x"}, Operator: MatchIn, Value: &Value{Raw: "foo"}},
-			err:      nil,
+			err:      "",
 		},
 		"Extra Whitespace (Not In)": {
 			input:    "\t\r\n  foo \t\r\n not \t\r\n in \t\r\n x \t\r\n",
 			expected: &MatchExpr{Selector: Selector{"x"}, Operator: MatchNotIn, Value: &Value{Raw: "foo"}},
-			err:      nil,
+			err:      "",
 		},
 		"Extra Whitespace (Is Empty)": {
 			input:    "\t\r\n  foo \t\r\n is \t\r\n empty \t\r\n",
 			expected: &MatchExpr{Selector: Selector{"foo"}, Operator: MatchIsEmpty, Value: nil},
-			err:      nil,
+			err:      "",
 		},
 		"Extra Whitespace (Is Not Empty)": {
 			input:    "\t\r\n  foo \t\r\n is \t\r\n not \t\r\n empty \t\r\n",
 			expected: &MatchExpr{Selector: Selector{"foo"}, Operator: MatchIsNotEmpty, Value: nil},
-			err:      nil,
+			err:      "",
 		},
 		"Extra Whitespace (Not)": {
 			input: "\t\r\n not \t\r\n  foo \t\r\n in \t\r\n x \t\r\n",
@@ -188,7 +188,7 @@ func TestExpressionParsing(t *testing.T) {
 				Operator: UnaryOpNot,
 				Operand:  &MatchExpr{Selector: Selector{"x"}, Operator: MatchIn, Value: &Value{Raw: "foo"}},
 			},
-			err: nil,
+			err: "",
 		},
 		"Extra Whitespace (And)": {
 			input: "\t\r\n foo \t\r\n == \t\r\n x \t\r\n and \t\r\n y \t\r\n is \t\r\n empty \t\r\n",
@@ -197,7 +197,7 @@ func TestExpressionParsing(t *testing.T) {
 				Left:     &MatchExpr{Selector: Selector{"foo"}, Operator: MatchEqual, Value: &Value{Raw: "x"}},
 				Right:    &MatchExpr{Selector: Selector{"y"}, Operator: MatchIsEmpty, Value: nil},
 			},
-			err: nil,
+			err: "",
 		},
 		"Extra Whitespace (Or)": {
 			input: "\t\r\n foo \t\r\n == \t\r\n x \t\r\n or \t\r\n y \t\r\n is \t\r\n empty \t\r\n",
@@ -206,46 +206,77 @@ func TestExpressionParsing(t *testing.T) {
 				Left:     &MatchExpr{Selector: Selector{"foo"}, Operator: MatchEqual, Value: &Value{Raw: "x"}},
 				Right:    &MatchExpr{Selector: Selector{"y"}, Operator: MatchIsEmpty, Value: nil},
 			},
-			err: nil,
+			err: "",
 		},
 		"Extra Whitespace (Parentheses)": {
 			input:    "\t\r\n ( \t\r\n foo \t\r\n == \t\r\n x \t\r\n ) \t\r\n",
 			expected: &MatchExpr{Selector: Selector{"foo"}, Operator: MatchEqual, Value: &Value{Raw: "x"}},
-			err:      nil,
+			err:      "",
 		},
 		"Selector Path": {
 			input:    "`environment` in foo.bar[\"meta\"].tags[\t`ENV` ]",
 			expected: &MatchExpr{Selector: Selector{"foo", "bar", "meta", "tags", "ENV"}, Operator: MatchIn, Value: &Value{Raw: "environment"}},
-			err:      nil,
+			err:      "",
 		},
 		"Selector All Indexes": {
 			input:    `environment in foo["bar"]["meta"]["tags"]["ENV"]`,
 			expected: &MatchExpr{Selector: Selector{"foo", "bar", "meta", "tags", "ENV"}, Operator: MatchIn, Value: &Value{Raw: "environment"}},
-			err:      nil,
+			err:      "",
 		},
 		"Selector All Dotted": {
 			input:    "environment in foo.bar.meta.tags.ENV",
 			expected: &MatchExpr{Selector: Selector{"foo", "bar", "meta", "tags", "ENV"}, Operator: MatchIn, Value: &Value{Raw: "environment"}},
-			err:      nil,
+			err:      "",
 		},
 		// selectors can contain almost any character set when index expressions are used
 		// This includes whitespace, hyphens, unicode, etc.
 		"Selector Index Chars": {
 			input:    "environment in foo[\"abc-def ghi åß∂ƒ\"]",
 			expected: &MatchExpr{Selector: Selector{"foo", "abc-def ghi åß∂ƒ"}, Operator: MatchIn, Value: &Value{Raw: "environment"}},
-			err:      nil,
+			err:      "",
+		},
+		"Unterminated String Literal 1": {
+			input:    "foo == \"12x",
+			expected: nil,
+			err:      "1:12 (11): rule \"string\": Unterminated string literal\n1:8 (7): rule \"value\": Invalid value",
+		},
+		"Unterminated String Literal 2": {
+			input:    "foo == `12x",
+			expected: nil,
+			err:      "1:12 (11): rule \"string\": Unterminated string literal\n1:8 (7): rule \"value\": Invalid value",
+		},
+		"Invalid Integer": {
+			input:    "foo == 3x",
+			expected: nil,
+			err:      "1:9 (8): rule \"integer\": Invalid integer literal\n1:8 (7): rule \"value\": Invalid value",
+		},
+		"Invalid Index Key": {
+			input:    "foo[3] == abc",
+			expected: nil,
+			err:      "1:5 (4): rule \"index\": Invalid index",
+		},
+		"Unclosed Index Expression 1": {
+			input:    "x in foo[\"abc\"",
+			expected: nil,
+			err:      "1:15 (14): rule \"index\": Unclosed index expression",
+		},
+		"Unclosed Index Expression 2": {
+			input:    "foo[\"abc\" == 3",
+			expected: nil,
+			err:      "1:11 (10): rule \"index\": Unclosed index expression",
 		},
 	}
 
 	for name, tcase := range tests {
 		tcase := tcase
+		name := name
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			raw, err := Parse(name, []byte(tcase.input))
-			if tcase.err != nil {
+			raw, err := Parse("", []byte(tcase.input))
+			if tcase.err != "" {
 				require.Error(t, err)
-				require.Equal(t, tcase.err, err)
+				require.EqualError(t, err, tcase.err)
 				require.Nil(t, raw)
 			} else {
 				require.NoError(t, err)
