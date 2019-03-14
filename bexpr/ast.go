@@ -1,4 +1,4 @@
-package filter
+package bexpr
 
 import (
 	"fmt"
@@ -8,9 +8,6 @@ import (
 
 //go:generate pigeon -o grammar.go grammar.peg
 //go:generate goimports -w grammar.go
-//go:generate stringer -type MatchOperator -trimprefix Match
-//go:generate stringer -type BinaryOperator -trimprefix BinaryOp
-//go:generate stringer -type UnaryOperator -trimprefix UnaryOp
 
 type Expr interface {
 	ExprNode() // no-op function to indicate that the node implements the Expr interface
