@@ -55,14 +55,14 @@ MatchExpression <- selector:Selector _? "==" _? value:Value     { return &MatchE
                  / value:Value _ "in" _ selector:Selector         { return &MatchExpr{Selector: selector.(Selector), Operator: MatchIn, Value: value.(*Value)}, nil}
                  / value:Value _ "not" _ "in" _ selector:Selector { return &MatchExpr{Selector: selector.(Selector), Operator: MatchNotIn, Value: value.(*Value)}, nil}
 
-Selector <- first:Identifier rest:("." Identifier)* {
+Selector <- first:Identifier rest:SelectorOrIndex* {
    sel := Selector{
       first.(string),
    }
 
    if rest != nil {
       for _, v := range rest.([]interface{}) {
-         sel = append(sel, v.([]interface{})[1].(string))
+        sel = append(sel, v.(string))
       }
    }
    return sel, nil
@@ -70,6 +70,12 @@ Selector <- first:Identifier rest:("." Identifier)* {
 
 Identifier <- [a-zA-Z] [a-zA-Z0-9_]* {
   return string(c.text), nil
+}
+
+SelectorOrIndex <- "." ident:Identifier {
+  return ident, nil
+} / "[" _? lit:StringLiteral _? "]" {
+  return lit, nil
 }
 
 Value <- selector:Selector { return &Value{Raw:strings.Join(selector.(Selector), ".")}, nil }

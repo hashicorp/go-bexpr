@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestFilterLangParsing(t *testing.T) {
+func TestExpressionParsing(t *testing.T) {
 	type testCase struct {
 		input    string
 		expected Expr
@@ -211,6 +211,28 @@ func TestFilterLangParsing(t *testing.T) {
 		"Extra Whitespace (Parentheses)": {
 			input:    "\t\r\n ( \t\r\n foo \t\r\n == \t\r\n x \t\r\n ) \t\r\n",
 			expected: &MatchExpr{Selector: Selector{"foo"}, Operator: MatchEqual, Value: &Value{Raw: "x"}},
+			err:      nil,
+		},
+		"Selector Path": {
+			input:    "`environment` in foo.bar[\"meta\"].tags[\t`ENV` ]",
+			expected: &MatchExpr{Selector: Selector{"foo", "bar", "meta", "tags", "ENV"}, Operator: MatchIn, Value: &Value{Raw: "environment"}},
+			err:      nil,
+		},
+		"Selector All Indexes": {
+			input:    `environment in foo["bar"]["meta"]["tags"]["ENV"]`,
+			expected: &MatchExpr{Selector: Selector{"foo", "bar", "meta", "tags", "ENV"}, Operator: MatchIn, Value: &Value{Raw: "environment"}},
+			err:      nil,
+		},
+		"Selector All Dotted": {
+			input:    "environment in foo.bar.meta.tags.ENV",
+			expected: &MatchExpr{Selector: Selector{"foo", "bar", "meta", "tags", "ENV"}, Operator: MatchIn, Value: &Value{Raw: "environment"}},
+			err:      nil,
+		},
+		// selectors can contain almost any character set when index expressions are used
+		// This includes whitespace, hyphens, unicode, etc.
+		"Selector Index Chars": {
+			input:    "environment in foo[\"abc-def ghi åß∂ƒ\"]",
+			expected: &MatchExpr{Selector: Selector{"foo", "abc-def ghi åß∂ƒ"}, Operator: MatchIn, Value: &Value{Raw: "environment"}},
 			err:      nil,
 		},
 	}
