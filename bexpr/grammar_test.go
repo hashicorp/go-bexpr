@@ -238,17 +238,17 @@ func TestExpressionParsing(t *testing.T) {
 		"Unterminated String Literal 1": {
 			input:    "foo == \"12x",
 			expected: nil,
-			err:      "1:12 (11): rule \"string\": Unterminated string literal\n1:8 (7): rule \"value\": Invalid value",
+			err:      "1:12 (11): rule \"string\": Unterminated string literal",
 		},
 		"Unterminated String Literal 2": {
 			input:    "foo == `12x",
 			expected: nil,
-			err:      "1:12 (11): rule \"string\": Unterminated string literal\n1:8 (7): rule \"value\": Invalid value",
+			err:      "1:12 (11): rule \"string\": Unterminated string literal",
 		},
 		"Invalid Integer": {
 			input:    "foo == 3x",
 			expected: nil,
-			err:      "1:9 (8): rule \"integer\": Invalid integer literal\n1:8 (7): rule \"value\": Invalid value",
+			err:      "1:9 (8): rule \"integer\": Invalid integer literal",
 		},
 		"Invalid Index Key": {
 			input:    "foo[3] == abc",
@@ -264,6 +264,41 @@ func TestExpressionParsing(t *testing.T) {
 			input:    "foo[\"abc\" == 3",
 			expected: nil,
 			err:      "1:11 (10): rule \"index\": Unclosed index expression",
+		},
+		"Invalid Selector 1": {
+			input:    "x in 32",
+			expected: nil,
+			err:      "1:6 (5): rule \"match\": Invalid selector",
+		},
+		"Invalid Selector 2": {
+			input:    "32 == 32",
+			expected: nil,
+			err:      `1:4 (3): no match found, expected: "in", "not" or [ \t\r\n]`,
+		},
+		"Invalid Selector 3": {
+			input:    "32 is empty",
+			expected: nil,
+			err:      `1:4 (3): no match found, expected: "in", "not" or [ \t\r\n]`,
+		},
+		"Junk at the end 1": {
+			input:    "x in foo abc",
+			expected: nil,
+			err:      `1:10 (9): no match found, expected: "and", "or", [ \t\r\n] or EOF`,
+		},
+		"Junk at the end 2": {
+			input:    "x in foo and ",
+			expected: nil,
+			err:      "1:14 (13): no match found, expected: \"(\", \"-\", \"\\\"\", \"`\", \"not\", [ \\t\\r\\n], [1-9] or [a-zA-Z]",
+		},
+		"Junk at the end 3": {
+			input:    "x in foo or ",
+			expected: nil,
+			err:      "1:13 (12): no match found, expected: \"(\", \"-\", \"\\\"\", \"`\", \"not\", [ \\t\\r\\n], [1-9] or [a-zA-Z]",
+		},
+		"Junk at the end 4": {
+			input:    "x in foo or not ",
+			expected: nil,
+			err:      "1:17 (16): no match found, expected: \"!=\", \"(\", \"-\", \"==\", \"\\\"\", \"`\", \"in\", \"is\", \"not\", [ \\t\\r\\n], [1-9] or [a-zA-Z]",
 		},
 	}
 
