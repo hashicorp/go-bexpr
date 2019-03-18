@@ -1,5 +1,5 @@
 {
-package grammar
+package bexpr
 
 import (
    "strconv"
