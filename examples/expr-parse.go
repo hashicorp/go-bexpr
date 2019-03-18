@@ -4,19 +4,19 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/hashicorp/go-filter/bexpr"
+	"github.com/hashicorp/go-filter/bexpr/grammar"
 )
 
 func main() {
 	args := os.Args[1:]
 
 	for i, exp := range args {
-		ast, err := bexpr.Parse(fmt.Sprintf("Expression %d", i), []byte(exp))
+		ast, err := grammar.Parse(fmt.Sprintf("Expression %d", i), []byte(exp))
 
 		if err != nil {
 			fmt.Println(err)
 		} else {
-			ast.(bexpr.Expr).Dump(os.Stdout, "   ", 1)
+			ast.(grammar.Expr).Dump(os.Stdout, "   ", 1)
 		}
 	}
 }
