@@ -6,6 +6,8 @@ import (
 	"strings"
 )
 
+// TODO - Probably should make most of what is in here un-exported
+
 //go:generate pigeon -o grammar.go grammar.peg
 //go:generate goimports -w grammar.go
 
@@ -96,6 +98,10 @@ type BinaryExpr struct {
 
 type Selector []string
 
+func (sel Selector) String() string {
+	return strings.Join([]string(sel), ".")
+}
+
 type MatchExpr struct {
 	Selector Selector
 	Operator MatchOperator
@@ -128,5 +134,4 @@ func (expr *MatchExpr) Dump(w io.Writer, indent string, level int) {
 	default:
 		fmt.Fprintf(w, "%[1]s%[3]s {\n%[2]sSelector: %[4]v\n%[1]s}\n", strings.Repeat(indent, level), strings.Repeat(indent, level+1), expr.Operator.String(), expr.Selector)
 	}
-
 }
