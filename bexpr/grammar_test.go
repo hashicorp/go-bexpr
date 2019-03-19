@@ -44,6 +44,16 @@ func TestExpressionParsing(t *testing.T) {
 			expected: &MatchExpr{Selector: Selector{"bar"}, Operator: MatchNotIn, Value: &Value{Raw: "foo"}},
 			err:      "",
 		},
+		"Match Contains": {
+			input:    "bar contains foo",
+			expected: &MatchExpr{Selector: Selector{"bar"}, Operator: MatchIn, Value: &Value{Raw: "foo"}},
+			err:      "",
+		},
+		"Match Not Contains": {
+			input:    "bar not contains foo",
+			expected: &MatchExpr{Selector: Selector{"bar"}, Operator: MatchNotIn, Value: &Value{Raw: "foo"}},
+			err:      "",
+		},
 		"Logical Not": {
 			input: "not prod in tags",
 			expected: &UnaryExpr{
@@ -298,7 +308,7 @@ func TestExpressionParsing(t *testing.T) {
 		"Junk at the end 4": {
 			input:    "x in foo or not ",
 			expected: nil,
-			err:      "1:17 (16): no match found, expected: \"!=\", \"(\", \"-\", \"==\", \"\\\"\", \"`\", \"in\", \"is\", \"not\", [ \\t\\r\\n], [1-9] or [a-zA-Z]",
+			err:      "1:17 (16): no match found, expected: \"!=\", \"(\", \"-\", \"==\", \"\\\"\", \"`\", \"contains\", \"in\", \"is\", \"not\", [ \\t\\r\\n], [1-9] or [a-zA-Z]",
 		},
 	}
 

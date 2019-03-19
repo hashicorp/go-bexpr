@@ -82,7 +82,7 @@ ParenthesizedExpression <- "(" _? expr:OrExpression _? ")" {
 
 MatchExpression "match" <- MatchSelectorOpValue / MatchSelectorOp / MatchValueOpSelector
 
-MatchSelectorOpValue "match" <- selector:Selector operator:(MatchEqual / MatchNotEqual) value:Value {
+MatchSelectorOpValue "match" <- selector:Selector operator:(MatchEqual / MatchNotEqual / MatchContains / MatchNotContains) value:Value {
    return &MatchExpr{Selector: selector.(Selector), Operator: operator.(MatchOperator), Value: value.(*Value)}, nil
 }
 
@@ -114,6 +114,13 @@ MatchIn <- _ "in" _ {
 MatchNotIn <- _ "not" _ "in" _ {
    return MatchNotIn, nil
 }
+MatchContains <- _ "contains" _ {
+   return MatchIn, nil
+}
+MatchNotContains <- _ "not" _ "contains" _ {
+   return MatchNotIn, nil
+}
+
 
 Selector "selector" <- first:Identifier rest:SelectorOrIndex* {
    sel := Selector{
