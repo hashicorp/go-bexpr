@@ -1,10 +1,10 @@
 // bexpr is an implementation of a generic boolean expression evaluator.
 // The general goal is to be able to evaluate some expression against some
+//
 package bexpr
 
 import (
 	"fmt"
-	"strconv"
 )
 
 // Function type for usage with a SelectorConfiguration
@@ -16,15 +16,12 @@ type FieldValueCoercionFn func(value string) (interface{}, error)
 //
 // Example: foo.bar.baz has 3 fields separate by '.' characters.
 type FieldConfiguration struct {
-	// The field's name
+	// The field's name. If this is an empty string then it will be treated
+	// as a wildcard and allow anything.
 	Name string
 
 	// SubFields
-	SubFields []FieldConfiguration
-
-	// Another type that implements the ExpressionMatcher interface to
-	// which operations on sub-fields should be delegated.
-	Delegate ExpressionMatcher
+	SubFields []*FieldConfiguration
 
 	// Function to run on the raw string value present in the expression
 	// syntax to coerce into whatever form the ExpressionMatcher wants
@@ -40,41 +37,10 @@ type FieldConfiguration struct {
 // ExpressionMatcher is the interface to implement to enable evaluating the boolean expressions
 // against them.
 type ExpressionMatcher interface {
-	// FieldConfigurations is used during parsing of the expression to validate
-	// that operations are valid for the particular fields and to further
-	// validate/coerce the string input into something the ExpressionMatcher
-	// wants to receive for its checks.
-	FieldConfigurations() []FieldConfiguration
-
 	// ExecuteMatch returns whether there was a match or not. We are not also
 	// expecting any errors because all the validation bits are handled
 	// during parsing and cross checking against the output of FieldConfigurations.
-	ExecuteMatcher(sel Selector, op MatchOperator, value interface{}) bool
-}
-
-func CoerceInt(value string) (interface{}, error) {
-	i, err := strconv.ParseInt(value, 10, 0)
-	return int(i), err
-}
-
-func CoerceInt8(value string) (interface{}, error) {
-	i, err := strconv.ParseInt(value, 10, 8)
-	return int8(i), err
-}
-
-func CoerceInt16(value string) (interface{}, error) {
-	i, err := strconv.ParseInt(value, 10, 16)
-	return int16(i), err
-}
-
-func CoerceInt32(value string) (interface{}, error) {
-	i, err := strconv.ParseInt(value, 10, 32)
-	return int32(i), err
-}
-
-func CoerceInt64(value string) (interface{}, error) {
-	i, err := strconv.ParseInt(value, 10, 64)
-	return int64(i), err
+	ExecuteMatcher(sel Selector, op MatchOperator, value interface{}) (bool, error)
 }
 
 type Expression struct {
@@ -86,38 +52,52 @@ type Expression struct {
 // field configurations to be used for validation but then there is nothing to
 // prevent passing a different value type to the Evaluate function
 
-func Create(expression string, matcher ExpressionMatcher) (*Expression, error) {
+func Create(expression string, fields []*FieldConfiguration) (*Expression, error) {
 	ast, err := Parse("", []byte(expression))
-	expr := ast.(Expr)
 
 	if err != nil {
 		return nil, err
 	}
 
-	fields := matcher.FieldConfigurations()
+	expr := ast.(Expr)
 
-	err = Validate(expr, fields)
+	// Perform extra field validations if we were given a list of FieldConfigurations
+	if len(fields) > 0 {
+		err = Validate(expr, fields)
 
-	if err != nil {
-		return nil, err
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &Expression{expr}, nil
 }
 
-func evaluateInternal(ast Expr, matcher ExpressionMatcher) bool {
+func evaluateInternal(ast Expr, datum interface{}) (bool, error) {
 	switch node := ast.(type) {
 	case *UnaryExpr:
 		switch node.Operator {
 		case UnaryOpNot:
-			return !evaluateInternal(node.Operand, matcher)
+			result, err := evaluateInternal(node.Operand, datum)
+			return !result, err
 		}
 	case *BinaryExpr:
 		switch node.Operator {
 		case BinaryOpAnd:
-			return evaluateInternal(node.Left, matcher) && evaluateInternal(node.Right, matcher)
+			result, err := evaluateInternal(node.Left, datum)
+			if err != nil || result == false {
+				return result, err
+			}
+
+			return evaluateInternal(node.Right, datum)
+
 		case BinaryOpOr:
-			return evaluateInternal(node.Left, matcher) || evaluateInternal(node.Right, matcher)
+			result, err := evaluateInternal(node.Left, datum)
+			if err != nil || result == true {
+				return result, err
+			}
+
+			return evaluateInternal(node.Right, datum)
 		}
 	case *MatchExpr:
 		var value interface{}
@@ -128,16 +108,23 @@ func evaluateInternal(ast Expr, matcher ExpressionMatcher) bool {
 				value = node.Value.Raw
 			}
 		}
-		return matcher.ExecuteMatcher(node.Selector, node.Operator, value)
+
+		if matcher, ok := datum.(ExpressionMatcher); ok {
+			return matcher.ExecuteMatcher(node.Selector, node.Operator, value)
+		}
+
+		return reflectEvaluateMatcher(node, datum)
+
+		return false, fmt.Errorf("Reflection based evaluation not implemented")
 	}
-	return false
+	return false, fmt.Errorf("Invalid AST node")
 }
 
-func (exp *Expression) Evaluate(matcher ExpressionMatcher) bool {
-	return evaluateInternal(exp.ast, matcher)
+func (exp *Expression) Evaluate(datum interface{}) (bool, error) {
+	return evaluateInternal(exp.ast, datum)
 }
 
-func Validate(ast Expr, fields []FieldConfiguration) error {
+func Validate(ast Expr, fields []*FieldConfiguration) error {
 	switch node := ast.(type) {
 	case *UnaryExpr:
 		return Validate(node.Operand, fields)
@@ -154,9 +141,9 @@ func Validate(ast Expr, fields []FieldConfiguration) error {
 		for idx, field := range node.Selector {
 			found := false
 			for _, fcfg := range configs {
-				if fcfg.Name == field {
+				if fcfg.Name == field || fcfg.Name == "" {
 					found = true
-					lastConfig = &fcfg
+					lastConfig = fcfg
 					configs = fcfg.SubFields
 					break
 				}

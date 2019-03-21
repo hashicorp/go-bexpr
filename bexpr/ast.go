@@ -8,7 +8,7 @@ import (
 
 // TODO - Probably should make most of what is in here un-exported
 
-//go:generate pigeon -o grammar.go grammar.peg
+//go:generate pigeon -o grammar.go  grammar.peg
 //go:generate goimports -w grammar.go
 
 type Expr interface {

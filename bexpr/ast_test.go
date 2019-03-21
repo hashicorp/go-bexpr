@@ -8,6 +8,7 @@ import (
 )
 
 func TestAST_Dump(t *testing.T) {
+	t.Parallel()
 	type testCase struct {
 		expr     Expr
 		expected string

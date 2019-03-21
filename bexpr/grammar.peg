@@ -43,7 +43,7 @@ Input <- _? expr:OrExpression _? EOF {
    return expr, nil
 }
 
-OrExpression <- left:AndExpression _ "or" _ right:AndExpression {
+OrExpression <- left:AndExpression _ "or" _ right:OrExpression {
    return &BinaryExpr{
       Operator: BinaryOpOr,
       Left: left.(Expr),
@@ -53,7 +53,7 @@ OrExpression <- left:AndExpression _ "or" _ right:AndExpression {
    return expr, nil
 }
 
-AndExpression <- left:NotExpression _ "and" _ right:NotExpression {
+AndExpression <- left:NotExpression _ "and" _ right:AndExpression {
    return &BinaryExpr{
       Operator: BinaryOpAnd,
       Left: left.(Expr),
@@ -72,7 +72,7 @@ NotExpression <- "not" _ expr:NotExpression {
    return expr, nil
 }
 
-ParenthesizedExpression <- "(" _? expr:OrExpression _? ")" {
+ParenthesizedExpression "grouping" <- "(" _? expr:OrExpression _? ")" {
    return expr, nil
 } / expr:MatchExpression {
    return expr, nil
@@ -154,14 +154,16 @@ IndexExpression "index" <- "[" _? lit:StringLiteral _? "]" {
 }
 
 Value "value" <- selector:Selector { return &Value{Raw:strings.Join(selector.(Selector), ".")}, nil }
-       / i:IntLiteral { return &Value{Raw: i.(string)}, nil }
+       / n:NumberLiteral { return &Value{Raw: n.(string)}, nil }
        / s:StringLiteral { return &Value{Raw: s.(string)}, nil}
 
-IntLiteral "integer" <- "-"? [1-9][0-9]* &(_ / EOF){
+NumberLiteral "number" <- "-"? IntegerOrFloat &(_ / EOF) {
    return string(c.text), nil
-} / "-"? [1-9][0-9]* !(_ / EOF) &{
-  return false, errors.New("Invalid integer literal")
+} / "-"? IntegerOrFloat !(_ / EOF) &{
+   return false, errors.New("Invalid number literal")
 }
+
+IntegerOrFloat <- ("0" / [1-9][0-9]*) ("." [0-9]+)?
 
 StringLiteral "string" <- ('`' RawStringChar* '`' / '"' DoubleStringChar* '"') {
   return strconv.Unquote(string(c.text))

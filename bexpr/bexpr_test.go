@@ -16,12 +16,13 @@ func (m *mockExpressionMatcher) FieldConfigurations() []FieldConfiguration {
 	return args.Get(0).([]FieldConfiguration)
 }
 
-func (m *mockExpressionMatcher) ExecuteMatcher(field Selector, op MatchOperator, value interface{}) bool {
+func (m *mockExpressionMatcher) ExecuteMatcher(field Selector, op MatchOperator, value interface{}) (bool, error) {
 	args := m.Called(field, op, value)
-	return args.Bool(0)
+	return args.Bool(0), args.Error(1)
 }
 
 func TestEvaluation(t *testing.T) {
+	t.Parallel()
 	type execMatchCall struct {
 		selector    Selector
 		op          MatchOperator
@@ -30,7 +31,7 @@ func TestEvaluation(t *testing.T) {
 	}
 
 	type testCase struct {
-		config     []FieldConfiguration
+		config     []*FieldConfiguration
 		expression string
 		matches    []execMatchCall
 		valid      bool
@@ -39,8 +40,8 @@ func TestEvaluation(t *testing.T) {
 
 	tests := map[string]testCase{
 		"basic": {
-			config: []FieldConfiguration{
-				FieldConfiguration{
+			config: []*FieldConfiguration{
+				&FieldConfiguration{
 					Name:     "foo",
 					CoerceFn: CoerceInt,
 					SupportedOperations: []MatchOperator{
@@ -69,12 +70,11 @@ func TestEvaluation(t *testing.T) {
 			t.Parallel()
 
 			m := new(mockExpressionMatcher)
-			m.On("FieldConfigurations").Return(tcase.config)
 			for _, call := range tcase.matches {
-				m.On("ExecuteMatcher", call.selector, call.op, call.value).Return(call.returnValue)
+				m.On("ExecuteMatcher", call.selector, call.op, call.value).Return(call.returnValue, nil)
 			}
 
-			expr, err := Create(tcase.expression, m)
+			expr, err := Create(tcase.expression, tcase.config)
 			if tcase.err != "" {
 				require.Error(t, err)
 				require.EqualError(t, err, tcase.err)
@@ -83,7 +83,9 @@ func TestEvaluation(t *testing.T) {
 				require.NoError(t, err)
 				require.NotNil(t, expr)
 
-				require.Equal(t, tcase.valid, expr.Evaluate(m))
+				match, err := expr.Evaluate(m)
+				require.NoError(t, err)
+				require.Equal(t, tcase.valid, match)
 			}
 
 			m.AssertExpectations(t)
@@ -92,16 +94,17 @@ func TestEvaluation(t *testing.T) {
 }
 
 func TestFieldConfiguration(t *testing.T) {
+	t.Parallel()
 	type testCase struct {
-		config     []FieldConfiguration
+		config     []*FieldConfiguration
 		expression string
 		err        string
 	}
 
 	tests := map[string]testCase{
 		"basic": {
-			config: []FieldConfiguration{
-				FieldConfiguration{
+			config: []*FieldConfiguration{
+				&FieldConfiguration{
 					Name:     "foo",
 					CoerceFn: CoerceInt,
 					SupportedOperations: []MatchOperator{
@@ -120,10 +123,7 @@ func TestFieldConfiguration(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			m := new(mockExpressionMatcher)
-			m.On("FieldConfigurations").Return(tcase.config)
-
-			expr, err := Create(tcase.expression, m)
+			expr, err := Create(tcase.expression, tcase.config)
 			if tcase.err != "" {
 				require.Error(t, err)
 				require.EqualError(t, err, tcase.err)
@@ -132,8 +132,6 @@ func TestFieldConfiguration(t *testing.T) {
 				require.NoError(t, err)
 				require.NotNil(t, expr)
 			}
-
-			m.AssertExpectations(t)
 		})
 	}
 }

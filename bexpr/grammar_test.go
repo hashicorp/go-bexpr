@@ -7,6 +7,7 @@ import (
 )
 
 func TestExpressionParsing(t *testing.T) {
+	t.Parallel()
 	type testCase struct {
 		input    string
 		expected Expr
@@ -255,10 +256,10 @@ func TestExpressionParsing(t *testing.T) {
 			expected: nil,
 			err:      "1:12 (11): rule \"string\": Unterminated string literal",
 		},
-		"Invalid Integer": {
+		"Invalid Number": {
 			input:    "foo == 3x",
 			expected: nil,
-			err:      "1:9 (8): rule \"integer\": Invalid integer literal",
+			err:      "1:9 (8): rule \"number\": Invalid number literal",
 		},
 		"Invalid Index Key": {
 			input:    "foo[3] == abc",
@@ -298,17 +299,37 @@ func TestExpressionParsing(t *testing.T) {
 		"Junk at the end 2": {
 			input:    "x in foo and ",
 			expected: nil,
-			err:      "1:14 (13): no match found, expected: \"(\", \"-\", \"\\\"\", \"`\", \"not\", [ \\t\\r\\n], [1-9] or [a-zA-Z]",
+			err:      "1:14 (13): no match found, expected: \"(\", \"-\", \"0\", \"\\\"\", \"`\", \"not\", [ \\t\\r\\n], [1-9] or [a-zA-Z]",
 		},
 		"Junk at the end 3": {
 			input:    "x in foo or ",
 			expected: nil,
-			err:      "1:13 (12): no match found, expected: \"(\", \"-\", \"\\\"\", \"`\", \"not\", [ \\t\\r\\n], [1-9] or [a-zA-Z]",
+			err:      "1:13 (12): no match found, expected: \"(\", \"-\", \"0\", \"\\\"\", \"`\", \"not\", [ \\t\\r\\n], [1-9] or [a-zA-Z]",
 		},
 		"Junk at the end 4": {
 			input:    "x in foo or not ",
 			expected: nil,
-			err:      "1:17 (16): no match found, expected: \"!=\", \"(\", \"-\", \"==\", \"\\\"\", \"`\", \"contains\", \"in\", \"is\", \"not\", [ \\t\\r\\n], [1-9] or [a-zA-Z]",
+			err:      "1:17 (16): no match found, expected: \"!=\", \"(\", \"-\", \"0\", \"==\", \"\\\"\", \"`\", \"contains\", \"in\", \"is\", \"not\", [ \\t\\r\\n], [1-9] or [a-zA-Z]",
+		},
+		"Float Literal 1": {
+			input:    "foo == 0.2",
+			expected: &MatchExpr{Selector: Selector{"foo"}, Operator: MatchEqual, Value: &Value{Raw: "0.2"}},
+			err:      "",
+		},
+		"Float Literal 2": {
+			input:    "foo == 11.11",
+			expected: &MatchExpr{Selector: Selector{"foo"}, Operator: MatchEqual, Value: &Value{Raw: "11.11"}},
+			err:      "",
+		},
+		"Negative Float": {
+			input:    "foo == -0.2",
+			expected: &MatchExpr{Selector: Selector{"foo"}, Operator: MatchEqual, Value: &Value{Raw: "-0.2"}},
+			err:      "",
+		},
+		"Unmatched Parentheses": {
+			input:    "(foo == 4",
+			expected: nil,
+			err:      "1:10 (9): rule \"grouping\": Unmatched parentheses",
 		},
 	}
 
