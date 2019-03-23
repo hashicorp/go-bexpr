@@ -331,6 +331,11 @@ func TestExpressionParsing(t *testing.T) {
 			expected: nil,
 			err:      "1:10 (9): rule \"grouping\": Unmatched parentheses",
 		},
+		"Double Not": {
+			input:    "not not foo == 3",
+			expected: &MatchExpr{Selector: Selector{"foo"}, Operator: MatchEqual, Value: &Value{Raw: "3"}},
+			err:      "",
+		},
 	}
 
 	for name, tcase := range tests {

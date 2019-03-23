@@ -6,6 +6,7 @@ import (
    "strings"
 )
 
+/*
 // The Parse, ParseFile and ParseReader functions will return an error that
 // also satisfies this interface.
 type ErrorList interface {
@@ -36,6 +37,7 @@ func (p *parserError) Pos() (line, col, offset int) {
 func (p *parserError) Expected() []string {
    return p.expected
 }
+*/
 
 }
 
@@ -64,6 +66,12 @@ AndExpression <- left:NotExpression _ "and" _ right:AndExpression {
 }
 
 NotExpression <- "not" _ expr:NotExpression {
+   if unary, ok := expr.(*UnaryExpr); ok && unary.Operator == UnaryOpNot {
+      // small optimization to get rid unnecessary levels of AST nodes
+      // for things like:  not not foo == 3  which is equivalent to foo == 3
+      return unary.Operand, nil
+   }
+
    return &UnaryExpr{
       Operator: UnaryOpNot,
       Operand: expr.(Expr),

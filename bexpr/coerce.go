@@ -1,6 +1,7 @@
 package bexpr
 
 import (
+	"reflect"
 	"strconv"
 )
 
@@ -107,4 +108,28 @@ func CoerceFloat32(value string) (interface{}, error) {
 // an expression into an `float64`
 func CoerceFloat64(value string) (interface{}, error) {
 	return strconv.ParseFloat(value, 64)
+}
+
+// CoerceString conforms to the FieldValueCoercionFn signature
+// and can be used to convert the raw string value of
+// an expression into a `string`
+func CoerceString(value string) (interface{}, error) {
+	return value, nil
+}
+
+var primitiveCoercionFns = map[reflect.Kind]FieldValueCoercionFn{
+	reflect.Bool:    CoerceBool,
+	reflect.Int:     CoerceInt,
+	reflect.Int8:    CoerceInt8,
+	reflect.Int16:   CoerceInt16,
+	reflect.Int32:   CoerceInt32,
+	reflect.Int64:   CoerceInt64,
+	reflect.Uint:    CoerceUint,
+	reflect.Uint8:   CoerceUint8,
+	reflect.Uint16:  CoerceUint16,
+	reflect.Uint32:  CoerceUint32,
+	reflect.Uint64:  CoerceUint64,
+	reflect.Float32: CoerceFloat32,
+	reflect.Float64: CoerceFloat64,
+	reflect.String:  CoerceString,
 }

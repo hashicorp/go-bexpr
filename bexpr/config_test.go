@@ -1,133 +1,36 @@
 package bexpr
 
 import (
-	"fmt"
-	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-type testFlatStruct struct {
-	Int        int
-	Int8       int8
-	Int16      int16
-	Int32      int32
-	Int64      int64
-	Uint       uint
-	Uint8      uint8
-	Uint16     uint16
-	Uint32     uint32
-	Uint64     uint64
-	Float32    float32
-	Float64    float64
-	Bool       bool
-	String     string
-	unexported string
-}
-
-type testNestedLevel2_1 struct {
-	Foo int
-	bar string
-	Baz string
-}
-
-type testNestedLevel2_2 struct {
-	X int
-	Y int
-	z int
-}
-
-type testNestedLevel1 struct {
-	Map              map[string]string
-	MapOfStructs     map[string]testNestedLevel2_1
-	MapInfInf        map[interface{}]interface{}
-	SliceOfInts      []int
-	SliceOfStructs   []testNestedLevel2_2
-	SliceOfMapInfInf []map[interface{}]interface{}
-}
-
-type testNestedTypes struct {
-	Nested testNestedLevel1
-	TopInt int
-}
-
-func validateFieldConfigurationsRecurse(t *testing.T, expected, actual []*FieldConfiguration, path string) bool {
-	t.Helper()
-
-	ok := assert.Len(t, actual, len(expected), "Actual []*FieldConfiguration length of %d != expected length of %d for path %q", len(actual), len(expected), path)
-
-	for i := 0; ok && i < len(expected); i++ {
-		expectedField := expected[i]
-		actualField := actual[i]
-
-		ok = ok && assert.Equal(t, expectedField.Name, actualField.Name, "Fields at index %d on path %q have different Names - Expected: %q, Actual: %q", i, path, expectedField.Name, actualField.Name)
-		ok = ok && assert.ElementsMatch(t, expectedField.SupportedOperations, actualField.SupportedOperations, "Fields %s at index %d on path %q have different SupportedOperations - Expected: %v, Actual: %v", expectedField.Name, i, path, expectedField.SupportedOperations, actualField.SupportedOperations)
-
-		newPath := expectedField.Name
-		if newPath == "" {
-			newPath = "*"
-		}
-		if path != "" {
-			newPath = fmt.Sprintf("%s.%s", path, newPath)
-		}
-		ok = ok && validateFieldConfigurationsRecurse(t, expectedField.SubFields, actualField.SubFields, newPath)
-
-		if !ok {
-			break
-		}
-	}
-
-	return ok
-}
-
-func validateFieldConfigurations(t *testing.T, expected, actual []*FieldConfiguration) {
-	t.Helper()
-	require.True(t, validateFieldConfigurationsRecurse(t, expected, actual, ""))
-}
-
-func dumpFieldConfigurationsRecurse(fields []*FieldConfiguration, level int, path string) {
-	for _, cfg := range fields {
-		fmt.Printf("%sPath: %s Field: %s, CoerceFn: %p, SupportedOperations: %v\n", strings.Repeat("   ", level), path, cfg.Name, cfg.CoerceFn, cfg.SupportedOperations)
-		newPath := cfg.Name
-		if path != "" {
-			newPath = fmt.Sprintf("%s.%s", path, cfg.Name)
-		}
-		dumpFieldConfigurationsRecurse(cfg.SubFields, level+1, newPath)
-	}
-}
-
-func dumpFieldConfigurations(name string, fields []*FieldConfiguration) {
-	fmt.Printf("===== %s =====\n", name)
-	dumpFieldConfigurationsRecurse(fields, 1, "")
-}
-
-func TestReflectFieldConfigurations(t *testing.T) {
+func TestGenerateFieldConfigurations(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Flat Struct", func(t *testing.T) {
 		t.Parallel()
 
-		expected := []*FieldConfiguration{
-			&FieldConfiguration{Name: "Int", CoerceFn: CoerceInt, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
-			&FieldConfiguration{Name: "Int8", CoerceFn: CoerceInt8, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
-			&FieldConfiguration{Name: "Int16", CoerceFn: CoerceInt16, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
-			&FieldConfiguration{Name: "Int32", CoerceFn: CoerceInt32, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
-			&FieldConfiguration{Name: "Int64", CoerceFn: CoerceInt64, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
-			&FieldConfiguration{Name: "Uint", CoerceFn: CoerceUint, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
-			&FieldConfiguration{Name: "Uint8", CoerceFn: CoerceUint8, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
-			&FieldConfiguration{Name: "Uint16", CoerceFn: CoerceUint16, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
-			&FieldConfiguration{Name: "Uint32", CoerceFn: CoerceUint32, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
-			&FieldConfiguration{Name: "Uint64", CoerceFn: CoerceUint64, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
-			&FieldConfiguration{Name: "Float32", CoerceFn: CoerceFloat32, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
-			&FieldConfiguration{Name: "Float64", CoerceFn: CoerceFloat64, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
-			&FieldConfiguration{Name: "Bool", CoerceFn: CoerceBool, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
-			&FieldConfiguration{Name: "String", CoerceFn: nil, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
+		expected := FieldConfigurations{
+			"Int":     &FieldConfiguration{StructFieldName: "Int", CoerceFn: CoerceInt, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
+			"Int8":    &FieldConfiguration{StructFieldName: "Int8", CoerceFn: CoerceInt8, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
+			"Int16":   &FieldConfiguration{StructFieldName: "Int16", CoerceFn: CoerceInt16, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
+			"Int32":   &FieldConfiguration{StructFieldName: "Int32", CoerceFn: CoerceInt32, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
+			"Int64":   &FieldConfiguration{StructFieldName: "Int64", CoerceFn: CoerceInt64, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
+			"Uint":    &FieldConfiguration{StructFieldName: "Uint", CoerceFn: CoerceUint, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
+			"Uint8":   &FieldConfiguration{StructFieldName: "Uint8", CoerceFn: CoerceUint8, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
+			"Uint16":  &FieldConfiguration{StructFieldName: "Uint16", CoerceFn: CoerceUint16, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
+			"Uint32":  &FieldConfiguration{StructFieldName: "Uint32", CoerceFn: CoerceUint32, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
+			"Uint64":  &FieldConfiguration{StructFieldName: "Uint64", CoerceFn: CoerceUint64, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
+			"Float32": &FieldConfiguration{StructFieldName: "Float32", CoerceFn: CoerceFloat32, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
+			"Float64": &FieldConfiguration{StructFieldName: "Float64", CoerceFn: CoerceFloat64, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
+			"Bool":    &FieldConfiguration{StructFieldName: "Bool", CoerceFn: CoerceBool, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
+			"String":  &FieldConfiguration{StructFieldName: "String", CoerceFn: CoerceString, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
 		}
 
 		var ttype *testFlatStruct
-		fields, err := ReflectFieldConfigurations(ttype)
+		fields, err := GenerateFieldConfigurations(ttype)
 		require.NoError(t, err)
 		validateFieldConfigurations(t, expected, fields)
 	})
@@ -135,12 +38,12 @@ func TestReflectFieldConfigurations(t *testing.T) {
 	t.Run("map[string]bool", func(t *testing.T) {
 		t.Parallel()
 
-		expected := []*FieldConfiguration{
-			&FieldConfiguration{Name: "", CoerceFn: CoerceBool, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
+		expected := FieldConfigurations{
+			FieldNameAny: &FieldConfiguration{CoerceFn: CoerceBool, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
 		}
 
 		var ttype map[string]bool
-		fields, err := ReflectFieldConfigurations(ttype)
+		fields, err := GenerateFieldConfigurations(ttype)
 		require.NoError(t, err)
 		validateFieldConfigurations(t, expected, fields)
 	})
@@ -149,7 +52,7 @@ func TestReflectFieldConfigurations(t *testing.T) {
 		t.Parallel()
 
 		var ttype map[string]interface{}
-		fields, err := ReflectFieldConfigurations(ttype)
+		fields, err := GenerateFieldConfigurations(ttype)
 		require.NoError(t, err)
 		require.Len(t, fields, 0)
 	})
@@ -158,7 +61,7 @@ func TestReflectFieldConfigurations(t *testing.T) {
 		t.Parallel()
 
 		var ttype map[interface{}]interface{}
-		fields, err := ReflectFieldConfigurations(ttype)
+		fields, err := GenerateFieldConfigurations(ttype)
 		require.Len(t, fields, 0)
 		require.Error(t, err)
 		require.EqualError(t, err, "Cannot generate FieldConfigurations for maps with keys that are not strings")
@@ -168,45 +71,46 @@ func TestReflectFieldConfigurations(t *testing.T) {
 		t.Parallel()
 
 		var ttype []map[string]string
-		fields, err := ReflectFieldConfigurations(ttype)
+		fields, err := GenerateFieldConfigurations(ttype)
 		require.Len(t, fields, 0)
 		require.Error(t, err)
-		require.EqualError(t, err, "Invalid top level type - can only use structs or map[string]*")
+		require.EqualError(t, err, "Invalid top level type - can only use structs, map[string]* or an ExpressionEvaluator")
 	})
 
 	t.Run("Nested Structs And Maps", func(t *testing.T) {
 		t.Parallel()
 
-		expected := []*FieldConfiguration{
-			&FieldConfiguration{Name: "Nested", SubFields: []*FieldConfiguration{
-				&FieldConfiguration{Name: "Map", SupportedOperations: []MatchOperator{MatchIn, MatchNotIn, MatchIsEmpty, MatchIsNotEmpty}, SubFields: []*FieldConfiguration{
-					&FieldConfiguration{Name: "", SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
+		expected := FieldConfigurations{
+			"Nested": &FieldConfiguration{StructFieldName: "Nested", SubFields: FieldConfigurations{
+				"Map": &FieldConfiguration{StructFieldName: "Map", SupportedOperations: []MatchOperator{MatchIn, MatchNotIn, MatchIsEmpty, MatchIsNotEmpty}, SubFields: FieldConfigurations{
+					FieldNameAny: &FieldConfiguration{StructFieldName: "", SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
 				}},
-				&FieldConfiguration{Name: "MapOfStructs", SupportedOperations: []MatchOperator{MatchIsEmpty, MatchIsNotEmpty, MatchIn, MatchNotIn}, SubFields: []*FieldConfiguration{
-					&FieldConfiguration{Name: "", SubFields: []*FieldConfiguration{
-						&FieldConfiguration{Name: "Foo", CoerceFn: CoerceInt, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
-						&FieldConfiguration{Name: "Baz", SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
+				"MapOfStructs": &FieldConfiguration{StructFieldName: "MapOfStructs", SupportedOperations: []MatchOperator{MatchIsEmpty, MatchIsNotEmpty, MatchIn, MatchNotIn}, SubFields: FieldConfigurations{
+					FieldNameAny: &FieldConfiguration{StructFieldName: "", SubFields: FieldConfigurations{
+						"Foo": &FieldConfiguration{StructFieldName: "Foo", CoerceFn: CoerceInt, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
+						"Baz": &FieldConfiguration{StructFieldName: "Baz", SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
 					}},
 				}},
-				&FieldConfiguration{Name: "MapInfInf", SupportedOperations: []MatchOperator{MatchIsEmpty, MatchIsNotEmpty}},
-				&FieldConfiguration{Name: "SliceOfInts", CoerceFn: CoerceInt, SupportedOperations: []MatchOperator{MatchIn, MatchNotIn, MatchIsEmpty, MatchIsNotEmpty}},
-				&FieldConfiguration{Name: "SliceOfStructs", SupportedOperations: []MatchOperator{MatchIsEmpty, MatchIsNotEmpty}, SubFields: []*FieldConfiguration{
-					&FieldConfiguration{Name: "X", CoerceFn: CoerceInt, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
-					&FieldConfiguration{Name: "Y", CoerceFn: CoerceInt, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
+				"MapInfInf":   &FieldConfiguration{StructFieldName: "MapInfInf", SupportedOperations: []MatchOperator{MatchIsEmpty, MatchIsNotEmpty}},
+				"SliceOfInts": &FieldConfiguration{StructFieldName: "SliceOfInts", CoerceFn: CoerceInt, SupportedOperations: []MatchOperator{MatchIn, MatchNotIn, MatchIsEmpty, MatchIsNotEmpty}},
+				"SliceOfStructs": &FieldConfiguration{StructFieldName: "SliceOfStructs", SupportedOperations: []MatchOperator{MatchIsEmpty, MatchIsNotEmpty}, SubFields: FieldConfigurations{
+					"X": &FieldConfiguration{StructFieldName: "X", CoerceFn: CoerceInt, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
+					"Y": &FieldConfiguration{StructFieldName: "Y", CoerceFn: CoerceInt, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
 				}},
-				&FieldConfiguration{Name: "SliceOfMapInfInf", SupportedOperations: []MatchOperator{MatchIsEmpty, MatchIsNotEmpty}},
+				"SliceOfMapInfInf": &FieldConfiguration{StructFieldName: "SliceOfMapInfInf", SupportedOperations: []MatchOperator{MatchIsEmpty, MatchIsNotEmpty}},
 			}},
-			&FieldConfiguration{Name: "TopInt", CoerceFn: CoerceInt, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
+			"TopInt": &FieldConfiguration{StructFieldName: "TopInt", CoerceFn: CoerceInt, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
 		}
 
 		var ttype *testNestedTypes
-		fields, err := ReflectFieldConfigurations(ttype)
+		fields, err := GenerateFieldConfigurations(ttype)
 		require.NoError(t, err)
 		validateFieldConfigurations(t, expected, fields)
 
 	})
 }
 
+/*
 func TestReflectEvaluation(t *testing.T) {
 	t.Parallel()
 
@@ -427,3 +331,4 @@ func TestReflectEvaluation(t *testing.T) {
 		})
 	}
 }
+*/
