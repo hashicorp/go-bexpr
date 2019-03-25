@@ -19,18 +19,18 @@ type ExpressionEvaluator interface {
 	// it may have. It must be valid to call this method on nil
 	FieldConfigurations() FieldConfigurations
 
-	// EvaluateExpression returns whether there was a match or not. We are not also
+	// EvaluateMatch returns whether there was a match or not. We are not also
 	// expecting any errors because all the validation bits are handled
 	// during parsing and cross checking against the output of FieldConfigurations.
-	EvaluateExpression(sel Selector, op MatchOperator, value interface{}) (bool, error)
+	EvaluateMatch(sel Selector, op MatchOperator, value interface{}) (bool, error)
 }
 
-type Expression struct {
+type Evaluator struct {
 	// The syntax tree
 	ast Expr
 
 	// A few configurations for extra validation of the AST
-	config ExpressionConfig
+	config EvaluatorConfig
 
 	// Once an expression has been run against a particular data type it cannot be executed
 	// against a different data type. Some coerced value memoization occurs which would
@@ -41,18 +41,18 @@ type Expression struct {
 	fields FieldConfigurations
 }
 
-func Create(expression string, config *ExpressionConfig) (*Expression, error) {
+func Create(expression string, config *EvaluatorConfig) (*Evaluator, error) {
 	return CreateForType(expression, config, nil)
 }
 
-func CreateForType(expression string, config *ExpressionConfig, dataType interface{}) (*Expression, error) {
+func CreateForType(expression string, config *EvaluatorConfig, dataType interface{}) (*Evaluator, error) {
 	ast, err := Parse("", []byte(expression))
 
 	if err != nil {
 		return nil, err
 	}
 
-	exp := &Expression{ast: ast.(Expr)}
+	exp := &Evaluator{ast: ast.(Expr)}
 
 	if config == nil {
 		config = &exp.config
@@ -65,7 +65,7 @@ func CreateForType(expression string, config *ExpressionConfig, dataType interfa
 	return exp, nil
 }
 
-func (exp *Expression) Evaluate(datum interface{}) (bool, error) {
+func (exp *Evaluator) Evaluate(datum interface{}) (bool, error) {
 	if exp.fields == nil {
 		err := exp.validate(&exp.config, datum, true)
 		if err != nil {
@@ -78,7 +78,7 @@ func (exp *Expression) Evaluate(datum interface{}) (bool, error) {
 	return evaluate(exp.ast, datum, exp.fields)
 }
 
-func (exp *Expression) validate(config *ExpressionConfig, dataType interface{}, updateExpression bool) error {
+func (exp *Evaluator) validate(config *EvaluatorConfig, dataType interface{}, updateEvaluator bool) error {
 	if config == nil {
 		return fmt.Errorf("Invalid config")
 	}
@@ -98,7 +98,7 @@ func (exp *Expression) validate(config *ExpressionConfig, dataType interface{}, 
 		return err
 	}
 
-	if updateExpression {
+	if updateEvaluator {
 		exp.config = *config
 		exp.fields = fields
 		exp.boundType = rtype
@@ -108,6 +108,6 @@ func (exp *Expression) validate(config *ExpressionConfig, dataType interface{}, 
 }
 
 // Validates an existing expression against a possibly different configuration
-func (exp *Expression) Validate(config *ExpressionConfig, dataType interface{}) error {
+func (exp *Evaluator) Validate(config *EvaluatorConfig, dataType interface{}) error {
 	return exp.validate(config, dataType, false)
 }

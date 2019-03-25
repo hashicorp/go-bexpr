@@ -31,9 +31,9 @@ type FieldConfiguration struct {
 	SubFields FieldConfigurations
 
 	// Function to run on the raw string value present in the expression
-	// syntax to coerce into whatever form the ExpressionMatcher wants
+	// syntax to coerce into whatever form the ExpressionEvaluator wants
 	// The coercion happens only once and will then be passed as the `value`
-	// parameter to all ExecuteMatcher invocations on the ExpressionMatcher.
+	// parameter to all EvaluateMatch invocations on the ExpressionEvaluator.
 	CoerceFn FieldValueCoercionFn
 
 	// List of MatchOperators supported for this field. This configuration
@@ -46,7 +46,7 @@ type FieldConfigurations map[FieldName]*FieldConfiguration
 
 // Extra configuration used to perform further validation on a parsed
 // expression and to aid in the evaluation process
-type ExpressionConfig struct {
+type EvaluatorConfig struct {
 	// Maximum number of matching expressions allowed. 0 means unlimited
 	// This does not include and, or and not expressions within the AST
 	MaxMatches int

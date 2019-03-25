@@ -203,7 +203,7 @@ func evaluateMatchExpressionRecurse(expression *MatchExpr, depth int, rvalue ref
 		value := reflect.Indirect(rvalue.FieldByName(fieldName))
 
 		if matcher, ok := value.Interface().(ExpressionEvaluator); ok {
-			return matcher.EvaluateExpression(expression.Selector[depth+1:], expression.Operator, getMatchExprValue(expression))
+			return matcher.EvaluateMatch(expression.Selector[depth+1:], expression.Operator, getMatchExprValue(expression))
 		}
 
 		return evaluateMatchExpressionRecurse(expression, depth+1, value, fieldConfig.SubFields)
@@ -248,7 +248,7 @@ func evaluateMatchExpressionRecurse(expression *MatchExpr, depth int, rvalue ref
 		}
 
 		if matcher, ok := value.Interface().(ExpressionEvaluator); ok {
-			return matcher.EvaluateExpression(expression.Selector[depth+1:], expression.Operator, getMatchExprValue(expression))
+			return matcher.EvaluateMatch(expression.Selector[depth+1:], expression.Operator, getMatchExprValue(expression))
 		}
 
 		return evaluateMatchExpressionRecurse(expression, depth+1, value, fields[FieldNameAny].SubFields)
@@ -259,7 +259,7 @@ func evaluateMatchExpressionRecurse(expression *MatchExpr, depth int, rvalue ref
 
 func evaluateMatchExpression(expression *MatchExpr, datum interface{}, fields FieldConfigurations) (bool, error) {
 	if matcher, ok := datum.(ExpressionEvaluator); ok {
-		return matcher.EvaluateExpression(expression.Selector, expression.Operator, getMatchExprValue(expression))
+		return matcher.EvaluateMatch(expression.Selector, expression.Operator, getMatchExprValue(expression))
 	}
 
 	rvalue := reflect.Indirect(reflect.ValueOf(datum))

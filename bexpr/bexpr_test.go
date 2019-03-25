@@ -11,7 +11,7 @@ func TestCreate(t *testing.T) {
 
 	type testCase struct {
 		expression string
-		config     ExpressionConfig
+		config     EvaluatorConfig
 		err        string
 	}
 
