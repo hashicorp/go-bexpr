@@ -8,6 +8,11 @@ import (
 	"reflect"
 )
 
+const (
+	defaultMaxMatches        = 32
+	defaultMaxRawValueLength = 512
+)
+
 // ExpressionEvaluator is the interface to implement to provide custom evaluation
 // logic for a selector. This could be used to enable synthetic fields or other
 // more complex logic that the default behavior does not support
@@ -91,6 +96,16 @@ func (exp *Evaluator) validate(config *EvaluatorConfig, dataType interface{}, up
 		if err != nil {
 			return err
 		}
+	}
+
+	maxMatches := config.MaxMatches
+	if maxMatches == 0 {
+		maxMatches = defaultMaxMatches
+	}
+
+	maxRawValueLength := config.MaxRawValueLength
+	if maxRawValueLength == 0 {
+		maxRawValueLength = defaultMaxRawValueLength
 	}
 
 	err = validate(exp.ast, fields, config.MaxMatches, config.MaxRawValueLength)
