@@ -1,4 +1,4 @@
-package filter
+package bexpr
 
 import (
 	"testing"
@@ -48,7 +48,7 @@ func TestFilterSlice(t *testing.T) {
 				Y: "b",
 			},
 		}
-		flt, err := Create("X==1", nil, (*testStruct)(nil))
+		flt, err := CreateFilter("X==1", nil, (*testStruct)(nil))
 		require.NoError(t, err)
 		require.NotNil(t, flt)
 
@@ -66,7 +66,7 @@ func TestFilterSlice(t *testing.T) {
 				Y: "c",
 			},
 		}
-		flt, err := Create("Y==`c`", nil, (*testStruct)(nil))
+		flt, err := CreateFilter("Y==`c`", nil, (*testStruct)(nil))
 		require.NoError(t, err)
 		require.NotNil(t, flt)
 
@@ -113,7 +113,7 @@ func TestFilterArray(t *testing.T) {
 				Y: "b",
 			},
 		}
-		flt, err := Create("X==1", nil, (*testStruct)(nil))
+		flt, err := CreateFilter("X==1", nil, (*testStruct)(nil))
 		require.NoError(t, err)
 		require.NotNil(t, flt)
 
@@ -131,7 +131,7 @@ func TestFilterArray(t *testing.T) {
 				Y: "c",
 			},
 		}
-		flt, err := Create("Y==`c`", nil, (*testStruct)(nil))
+		flt, err := CreateFilter("Y==`c`", nil, (*testStruct)(nil))
 		require.NoError(t, err)
 		require.NotNil(t, flt)
 
@@ -178,7 +178,7 @@ func TestFilterMap(t *testing.T) {
 				Y: "b",
 			},
 		}
-		flt, err := Create("X==1", nil, (*testStruct)(nil))
+		flt, err := CreateFilter("X==1", nil, (*testStruct)(nil))
 		require.NoError(t, err)
 		require.NotNil(t, flt)
 
@@ -196,7 +196,7 @@ func TestFilterMap(t *testing.T) {
 				Y: "c",
 			},
 		}
-		flt, err := Create("Y==`c`", nil, (*testStruct)(nil))
+		flt, err := CreateFilter("Y==`c`", nil, (*testStruct)(nil))
 		require.NoError(t, err)
 		require.NotNil(t, flt)
 

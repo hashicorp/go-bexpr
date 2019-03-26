@@ -11,10 +11,8 @@ import (
 //go:generate pigeon -o grammar.go -optimize-parser grammar.peg
 //go:generate goimports -w grammar.go
 
-type Expr interface {
-	ExprNode() // no-op function to indicate that the node implements the Expr interface
-
-	Dump(w io.Writer, indent string, level int)
+type Expression interface {
+	ExpressionDump(w io.Writer, indent string, level int)
 }
 
 type UnaryOperator int
@@ -80,20 +78,20 @@ func (op MatchOperator) String() string {
 	}
 }
 
-type Value struct {
+type MatchValue struct {
 	Raw       string
 	Converted interface{}
 }
 
-type UnaryExpr struct {
+type UnaryExpression struct {
 	Operator UnaryOperator
-	Operand  Expr
+	Operand  Expression
 }
 
-type BinaryExpr struct {
-	Left     Expr
+type BinaryExpression struct {
+	Left     Expression
 	Operator BinaryOperator
-	Right    Expr
+	Right    Expression
 }
 
 type Selector []string
@@ -102,32 +100,28 @@ func (sel Selector) String() string {
 	return strings.Join([]string(sel), ".")
 }
 
-type MatchExpr struct {
+type MatchExpression struct {
 	Selector Selector
 	Operator MatchOperator
-	Value    *Value
+	Value    *MatchValue
 }
 
-func (expr *UnaryExpr) ExprNode()  {}
-func (expr *BinaryExpr) ExprNode() {}
-func (expr *MatchExpr) ExprNode()  {}
-
-func (expr *UnaryExpr) Dump(w io.Writer, indent string, level int) {
+func (expr *UnaryExpression) ExpressionDump(w io.Writer, indent string, level int) {
 	localIndent := strings.Repeat(indent, level)
 	fmt.Fprintf(w, "%s%s {\n", localIndent, expr.Operator.String())
-	expr.Operand.Dump(w, indent, level+1)
+	expr.Operand.ExpressionDump(w, indent, level+1)
 	fmt.Fprintf(w, "%s}\n", localIndent)
 }
 
-func (expr *BinaryExpr) Dump(w io.Writer, indent string, level int) {
+func (expr *BinaryExpression) ExpressionDump(w io.Writer, indent string, level int) {
 	localIndent := strings.Repeat(indent, level)
 	fmt.Fprintf(w, "%s%s {\n", localIndent, expr.Operator.String())
-	expr.Left.Dump(w, indent, level+1)
-	expr.Right.Dump(w, indent, level+1)
+	expr.Left.ExpressionDump(w, indent, level+1)
+	expr.Right.ExpressionDump(w, indent, level+1)
 	fmt.Fprintf(w, "%s}\n", localIndent)
 }
 
-func (expr *MatchExpr) Dump(w io.Writer, indent string, level int) {
+func (expr *MatchExpression) ExpressionDump(w io.Writer, indent string, level int) {
 	switch expr.Operator {
 	case MatchEqual, MatchNotEqual, MatchIn, MatchNotIn:
 		fmt.Fprintf(w, "%[1]s%[3]s {\n%[2]sSelector: %[4]v\n%[2]sValue: %[5]q\n%[1]s}\n", strings.Repeat(indent, level), strings.Repeat(indent, level+1), expr.Operator.String(), expr.Selector, expr.Value.Raw)

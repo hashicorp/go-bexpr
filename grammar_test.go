@@ -10,115 +10,115 @@ func TestExpressionParsing(t *testing.T) {
 	t.Parallel()
 	type testCase struct {
 		input    string
-		expected Expr
+		expected Expression
 		err      string
 	}
 
 	tests := map[string]testCase{
 		"Match Equality": {
 			input:    "foo == 3",
-			expected: &MatchExpr{Selector: Selector{"foo"}, Operator: MatchEqual, Value: &Value{Raw: "3"}},
+			expected: &MatchExpression{Selector: Selector{"foo"}, Operator: MatchEqual, Value: &MatchValue{Raw: "3"}},
 			err:      "",
 		},
 		"Match Inequality": {
 			input:    "foo != xyz",
-			expected: &MatchExpr{Selector: Selector{"foo"}, Operator: MatchNotEqual, Value: &Value{Raw: "xyz"}},
+			expected: &MatchExpression{Selector: Selector{"foo"}, Operator: MatchNotEqual, Value: &MatchValue{Raw: "xyz"}},
 			err:      "",
 		},
 		"Match Is Empty": {
 			input:    "list is empty",
-			expected: &MatchExpr{Selector: Selector{"list"}, Operator: MatchIsEmpty, Value: nil},
+			expected: &MatchExpression{Selector: Selector{"list"}, Operator: MatchIsEmpty, Value: nil},
 			err:      "",
 		},
 		"Match Is Not Empty": {
 			input:    "list is not empty",
-			expected: &MatchExpr{Selector: Selector{"list"}, Operator: MatchIsNotEmpty, Value: nil},
+			expected: &MatchExpression{Selector: Selector{"list"}, Operator: MatchIsNotEmpty, Value: nil},
 			err:      "",
 		},
 		"Match In": {
 			input:    "foo in bar",
-			expected: &MatchExpr{Selector: Selector{"bar"}, Operator: MatchIn, Value: &Value{Raw: "foo"}},
+			expected: &MatchExpression{Selector: Selector{"bar"}, Operator: MatchIn, Value: &MatchValue{Raw: "foo"}},
 			err:      "",
 		},
 		"Match Not In": {
 			input:    "foo not in bar",
-			expected: &MatchExpr{Selector: Selector{"bar"}, Operator: MatchNotIn, Value: &Value{Raw: "foo"}},
+			expected: &MatchExpression{Selector: Selector{"bar"}, Operator: MatchNotIn, Value: &MatchValue{Raw: "foo"}},
 			err:      "",
 		},
 		"Match Contains": {
 			input:    "bar contains foo",
-			expected: &MatchExpr{Selector: Selector{"bar"}, Operator: MatchIn, Value: &Value{Raw: "foo"}},
+			expected: &MatchExpression{Selector: Selector{"bar"}, Operator: MatchIn, Value: &MatchValue{Raw: "foo"}},
 			err:      "",
 		},
 		"Match Not Contains": {
 			input:    "bar not contains foo",
-			expected: &MatchExpr{Selector: Selector{"bar"}, Operator: MatchNotIn, Value: &Value{Raw: "foo"}},
+			expected: &MatchExpression{Selector: Selector{"bar"}, Operator: MatchNotIn, Value: &MatchValue{Raw: "foo"}},
 			err:      "",
 		},
 		"Logical Not": {
 			input: "not prod in tags",
-			expected: &UnaryExpr{
+			expected: &UnaryExpression{
 				Operator: UnaryOpNot,
-				Operand:  &MatchExpr{Selector: Selector{"tags"}, Operator: MatchIn, Value: &Value{Raw: "prod"}},
+				Operand:  &MatchExpression{Selector: Selector{"tags"}, Operator: MatchIn, Value: &MatchValue{Raw: "prod"}},
 			},
 			err: "",
 		},
 		"Logical And": {
 			input: "port != 80 and port != 8080",
-			expected: &BinaryExpr{
+			expected: &BinaryExpression{
 				Operator: BinaryOpAnd,
-				Left:     &MatchExpr{Selector: Selector{"port"}, Operator: MatchNotEqual, Value: &Value{Raw: "80"}},
-				Right:    &MatchExpr{Selector: Selector{"port"}, Operator: MatchNotEqual, Value: &Value{Raw: "8080"}},
+				Left:     &MatchExpression{Selector: Selector{"port"}, Operator: MatchNotEqual, Value: &MatchValue{Raw: "80"}},
+				Right:    &MatchExpression{Selector: Selector{"port"}, Operator: MatchNotEqual, Value: &MatchValue{Raw: "8080"}},
 			},
 			err: "",
 		},
 		"Logical Or": {
 			input: "port == 80 or port == 443",
-			expected: &BinaryExpr{
+			expected: &BinaryExpression{
 				Operator: BinaryOpOr,
-				Left:     &MatchExpr{Selector: Selector{"port"}, Operator: MatchEqual, Value: &Value{Raw: "80"}},
-				Right:    &MatchExpr{Selector: Selector{"port"}, Operator: MatchEqual, Value: &Value{Raw: "443"}},
+				Left:     &MatchExpression{Selector: Selector{"port"}, Operator: MatchEqual, Value: &MatchValue{Raw: "80"}},
+				Right:    &MatchExpression{Selector: Selector{"port"}, Operator: MatchEqual, Value: &MatchValue{Raw: "443"}},
 			},
 			err: "",
 		},
 		"Double Quoted Value (Equal)": {
 			input:    "foo == \"bar\"",
-			expected: &MatchExpr{Selector: Selector{"foo"}, Operator: MatchEqual, Value: &Value{Raw: "bar"}},
+			expected: &MatchExpression{Selector: Selector{"foo"}, Operator: MatchEqual, Value: &MatchValue{Raw: "bar"}},
 			err:      "",
 		},
 		"Double Quoted Value (Not Equal)": {
 			input:    "foo != \"bar\"",
-			expected: &MatchExpr{Selector: Selector{"foo"}, Operator: MatchNotEqual, Value: &Value{Raw: "bar"}},
+			expected: &MatchExpression{Selector: Selector{"foo"}, Operator: MatchNotEqual, Value: &MatchValue{Raw: "bar"}},
 			err:      "",
 		},
 		"Double Quoted Value (In)": {
 			input:    "\"foo\" in bar",
-			expected: &MatchExpr{Selector: Selector{"bar"}, Operator: MatchIn, Value: &Value{Raw: "foo"}},
+			expected: &MatchExpression{Selector: Selector{"bar"}, Operator: MatchIn, Value: &MatchValue{Raw: "foo"}},
 			err:      "",
 		},
 		"Double Quoted Value (Not In)": {
 			input:    "\"foo\" not in bar",
-			expected: &MatchExpr{Selector: Selector{"bar"}, Operator: MatchNotIn, Value: &Value{Raw: "foo"}},
+			expected: &MatchExpression{Selector: Selector{"bar"}, Operator: MatchNotIn, Value: &MatchValue{Raw: "foo"}},
 			err:      "",
 		},
 		"Backtick Quoted Value (Equal)": {
 			input:    "foo == `bar`",
-			expected: &MatchExpr{Selector: Selector{"foo"}, Operator: MatchEqual, Value: &Value{Raw: "bar"}},
+			expected: &MatchExpression{Selector: Selector{"foo"}, Operator: MatchEqual, Value: &MatchValue{Raw: "bar"}},
 			err:      "",
 		},
 		"Backtick Quoted Value (Not Equal)": {
 			input:    "foo != `bar`",
-			expected: &MatchExpr{Selector: Selector{"foo"}, Operator: MatchNotEqual, Value: &Value{Raw: "bar"}},
+			expected: &MatchExpression{Selector: Selector{"foo"}, Operator: MatchNotEqual, Value: &MatchValue{Raw: "bar"}},
 			err:      "",
 		},
 		"Backtick Quoted Value (In)": {
 			input:    "`foo` in bar",
-			expected: &MatchExpr{Selector: Selector{"bar"}, Operator: MatchIn, Value: &Value{Raw: "foo"}},
+			expected: &MatchExpression{Selector: Selector{"bar"}, Operator: MatchIn, Value: &MatchValue{Raw: "foo"}},
 			err:      "",
 		},
 		"Backtick Quoted Value (Not In)": {
 			input:    "`foo` not in bar",
-			expected: &MatchExpr{Selector: Selector{"bar"}, Operator: MatchNotIn, Value: &Value{Raw: "foo"}},
+			expected: &MatchExpression{Selector: Selector{"bar"}, Operator: MatchNotIn, Value: &MatchValue{Raw: "foo"}},
 			err:      "",
 		},
 		// This is standard boolean expression precedence
@@ -128,17 +128,17 @@ func TestExpressionParsing(t *testing.T) {
 		// 3 - or
 		"Logical Operator Precedence": {
 			input: "x in foo and not str == something or list is empty",
-			expected: &BinaryExpr{
+			expected: &BinaryExpression{
 				Operator: BinaryOpOr,
-				Left: &BinaryExpr{
+				Left: &BinaryExpression{
 					Operator: BinaryOpAnd,
-					Left:     &MatchExpr{Selector: Selector{"foo"}, Operator: MatchIn, Value: &Value{Raw: "x"}},
-					Right: &UnaryExpr{
+					Left:     &MatchExpression{Selector: Selector{"foo"}, Operator: MatchIn, Value: &MatchValue{Raw: "x"}},
+					Right: &UnaryExpression{
 						Operator: UnaryOpNot,
-						Operand:  &MatchExpr{Selector: Selector{"str"}, Operator: MatchEqual, Value: &Value{Raw: "something"}},
+						Operand:  &MatchExpression{Selector: Selector{"str"}, Operator: MatchEqual, Value: &MatchValue{Raw: "something"}},
 					},
 				},
-				Right: &MatchExpr{Selector: Selector{"list"}, Operator: MatchIsEmpty, Value: nil},
+				Right: &MatchExpression{Selector: Selector{"list"}, Operator: MatchIsEmpty, Value: nil},
 			},
 			err: "",
 		},
@@ -149,15 +149,15 @@ func TestExpressionParsing(t *testing.T) {
 		// happen earlier
 		"Logical Operator Precedence (Parenthesized)": {
 			input: "x in foo and not (str == something or list is empty)",
-			expected: &BinaryExpr{
+			expected: &BinaryExpression{
 				Operator: BinaryOpAnd,
-				Left:     &MatchExpr{Selector: Selector{"foo"}, Operator: MatchIn, Value: &Value{Raw: "x"}},
-				Right: &UnaryExpr{
+				Left:     &MatchExpression{Selector: Selector{"foo"}, Operator: MatchIn, Value: &MatchValue{Raw: "x"}},
+				Right: &UnaryExpression{
 					Operator: UnaryOpNot,
-					Operand: &BinaryExpr{
+					Operand: &BinaryExpression{
 						Operator: BinaryOpOr,
-						Left:     &MatchExpr{Selector: Selector{"str"}, Operator: MatchEqual, Value: &Value{Raw: "something"}},
-						Right:    &MatchExpr{Selector: Selector{"list"}, Operator: MatchIsEmpty, Value: nil},
+						Left:     &MatchExpression{Selector: Selector{"str"}, Operator: MatchEqual, Value: &MatchValue{Raw: "something"}},
+						Right:    &MatchExpression{Selector: Selector{"list"}, Operator: MatchIsEmpty, Value: nil},
 					},
 				},
 			},
@@ -165,85 +165,85 @@ func TestExpressionParsing(t *testing.T) {
 		},
 		"Extra Whitespace (Equal)": {
 			input:    "\t\r\n  foo \t\r\n == \t\r\n x \t\r\n",
-			expected: &MatchExpr{Selector: Selector{"foo"}, Operator: MatchEqual, Value: &Value{Raw: "x"}},
+			expected: &MatchExpression{Selector: Selector{"foo"}, Operator: MatchEqual, Value: &MatchValue{Raw: "x"}},
 			err:      "",
 		},
 		"Extra Whitespace (Not Equal)": {
 			input:    "\t\r\n  foo \t\r\n != \t\r\n x \t\r\n",
-			expected: &MatchExpr{Selector: Selector{"foo"}, Operator: MatchNotEqual, Value: &Value{Raw: "x"}},
+			expected: &MatchExpression{Selector: Selector{"foo"}, Operator: MatchNotEqual, Value: &MatchValue{Raw: "x"}},
 			err:      "",
 		},
 		"Extra Whitespace (In)": {
 			input:    "\t\r\n  foo \t\r\n in \t\r\n x \t\r\n",
-			expected: &MatchExpr{Selector: Selector{"x"}, Operator: MatchIn, Value: &Value{Raw: "foo"}},
+			expected: &MatchExpression{Selector: Selector{"x"}, Operator: MatchIn, Value: &MatchValue{Raw: "foo"}},
 			err:      "",
 		},
 		"Extra Whitespace (Not In)": {
 			input:    "\t\r\n  foo \t\r\n not \t\r\n in \t\r\n x \t\r\n",
-			expected: &MatchExpr{Selector: Selector{"x"}, Operator: MatchNotIn, Value: &Value{Raw: "foo"}},
+			expected: &MatchExpression{Selector: Selector{"x"}, Operator: MatchNotIn, Value: &MatchValue{Raw: "foo"}},
 			err:      "",
 		},
 		"Extra Whitespace (Is Empty)": {
 			input:    "\t\r\n  foo \t\r\n is \t\r\n empty \t\r\n",
-			expected: &MatchExpr{Selector: Selector{"foo"}, Operator: MatchIsEmpty, Value: nil},
+			expected: &MatchExpression{Selector: Selector{"foo"}, Operator: MatchIsEmpty, Value: nil},
 			err:      "",
 		},
 		"Extra Whitespace (Is Not Empty)": {
 			input:    "\t\r\n  foo \t\r\n is \t\r\n not \t\r\n empty \t\r\n",
-			expected: &MatchExpr{Selector: Selector{"foo"}, Operator: MatchIsNotEmpty, Value: nil},
+			expected: &MatchExpression{Selector: Selector{"foo"}, Operator: MatchIsNotEmpty, Value: nil},
 			err:      "",
 		},
 		"Extra Whitespace (Not)": {
 			input: "\t\r\n not \t\r\n  foo \t\r\n in \t\r\n x \t\r\n",
-			expected: &UnaryExpr{
+			expected: &UnaryExpression{
 				Operator: UnaryOpNot,
-				Operand:  &MatchExpr{Selector: Selector{"x"}, Operator: MatchIn, Value: &Value{Raw: "foo"}},
+				Operand:  &MatchExpression{Selector: Selector{"x"}, Operator: MatchIn, Value: &MatchValue{Raw: "foo"}},
 			},
 			err: "",
 		},
 		"Extra Whitespace (And)": {
 			input: "\t\r\n foo \t\r\n == \t\r\n x \t\r\n and \t\r\n y \t\r\n is \t\r\n empty \t\r\n",
-			expected: &BinaryExpr{
+			expected: &BinaryExpression{
 				Operator: BinaryOpAnd,
-				Left:     &MatchExpr{Selector: Selector{"foo"}, Operator: MatchEqual, Value: &Value{Raw: "x"}},
-				Right:    &MatchExpr{Selector: Selector{"y"}, Operator: MatchIsEmpty, Value: nil},
+				Left:     &MatchExpression{Selector: Selector{"foo"}, Operator: MatchEqual, Value: &MatchValue{Raw: "x"}},
+				Right:    &MatchExpression{Selector: Selector{"y"}, Operator: MatchIsEmpty, Value: nil},
 			},
 			err: "",
 		},
 		"Extra Whitespace (Or)": {
 			input: "\t\r\n foo \t\r\n == \t\r\n x \t\r\n or \t\r\n y \t\r\n is \t\r\n empty \t\r\n",
-			expected: &BinaryExpr{
+			expected: &BinaryExpression{
 				Operator: BinaryOpOr,
-				Left:     &MatchExpr{Selector: Selector{"foo"}, Operator: MatchEqual, Value: &Value{Raw: "x"}},
-				Right:    &MatchExpr{Selector: Selector{"y"}, Operator: MatchIsEmpty, Value: nil},
+				Left:     &MatchExpression{Selector: Selector{"foo"}, Operator: MatchEqual, Value: &MatchValue{Raw: "x"}},
+				Right:    &MatchExpression{Selector: Selector{"y"}, Operator: MatchIsEmpty, Value: nil},
 			},
 			err: "",
 		},
 		"Extra Whitespace (Parentheses)": {
 			input:    "\t\r\n ( \t\r\n foo \t\r\n == \t\r\n x \t\r\n ) \t\r\n",
-			expected: &MatchExpr{Selector: Selector{"foo"}, Operator: MatchEqual, Value: &Value{Raw: "x"}},
+			expected: &MatchExpression{Selector: Selector{"foo"}, Operator: MatchEqual, Value: &MatchValue{Raw: "x"}},
 			err:      "",
 		},
 		"Selector Path": {
 			input:    "`environment` in foo.bar[\"meta\"].tags[\t`ENV` ]",
-			expected: &MatchExpr{Selector: Selector{"foo", "bar", "meta", "tags", "ENV"}, Operator: MatchIn, Value: &Value{Raw: "environment"}},
+			expected: &MatchExpression{Selector: Selector{"foo", "bar", "meta", "tags", "ENV"}, Operator: MatchIn, Value: &MatchValue{Raw: "environment"}},
 			err:      "",
 		},
 		"Selector All Indexes": {
 			input:    `environment in foo["bar"]["meta"]["tags"]["ENV"]`,
-			expected: &MatchExpr{Selector: Selector{"foo", "bar", "meta", "tags", "ENV"}, Operator: MatchIn, Value: &Value{Raw: "environment"}},
+			expected: &MatchExpression{Selector: Selector{"foo", "bar", "meta", "tags", "ENV"}, Operator: MatchIn, Value: &MatchValue{Raw: "environment"}},
 			err:      "",
 		},
 		"Selector All Dotted": {
 			input:    "environment in foo.bar.meta.tags.ENV",
-			expected: &MatchExpr{Selector: Selector{"foo", "bar", "meta", "tags", "ENV"}, Operator: MatchIn, Value: &Value{Raw: "environment"}},
+			expected: &MatchExpression{Selector: Selector{"foo", "bar", "meta", "tags", "ENV"}, Operator: MatchIn, Value: &MatchValue{Raw: "environment"}},
 			err:      "",
 		},
 		// selectors can contain almost any character set when index expressions are used
 		// This includes whitespace, hyphens, unicode, etc.
 		"Selector Index Chars": {
 			input:    "environment in foo[\"abc-def ghi åß∂ƒ\"]",
-			expected: &MatchExpr{Selector: Selector{"foo", "abc-def ghi åß∂ƒ"}, Operator: MatchIn, Value: &Value{Raw: "environment"}},
+			expected: &MatchExpression{Selector: Selector{"foo", "abc-def ghi åß∂ƒ"}, Operator: MatchIn, Value: &MatchValue{Raw: "environment"}},
 			err:      "",
 		},
 		"Unterminated String Literal 1": {
@@ -313,17 +313,17 @@ func TestExpressionParsing(t *testing.T) {
 		},
 		"Float Literal 1": {
 			input:    "foo == 0.2",
-			expected: &MatchExpr{Selector: Selector{"foo"}, Operator: MatchEqual, Value: &Value{Raw: "0.2"}},
+			expected: &MatchExpression{Selector: Selector{"foo"}, Operator: MatchEqual, Value: &MatchValue{Raw: "0.2"}},
 			err:      "",
 		},
 		"Float Literal 2": {
 			input:    "foo == 11.11",
-			expected: &MatchExpr{Selector: Selector{"foo"}, Operator: MatchEqual, Value: &Value{Raw: "11.11"}},
+			expected: &MatchExpression{Selector: Selector{"foo"}, Operator: MatchEqual, Value: &MatchValue{Raw: "11.11"}},
 			err:      "",
 		},
 		"Negative Float": {
 			input:    "foo == -0.2",
-			expected: &MatchExpr{Selector: Selector{"foo"}, Operator: MatchEqual, Value: &Value{Raw: "-0.2"}},
+			expected: &MatchExpression{Selector: Selector{"foo"}, Operator: MatchEqual, Value: &MatchValue{Raw: "-0.2"}},
 			err:      "",
 		},
 		"Unmatched Parentheses": {
@@ -333,7 +333,7 @@ func TestExpressionParsing(t *testing.T) {
 		},
 		"Double Not": {
 			input:    "not not foo == 3",
-			expected: &MatchExpr{Selector: Selector{"foo"}, Operator: MatchEqual, Value: &Value{Raw: "3"}},
+			expected: &MatchExpression{Selector: Selector{"foo"}, Operator: MatchEqual, Value: &MatchValue{Raw: "3"}},
 			err:      "",
 		},
 	}

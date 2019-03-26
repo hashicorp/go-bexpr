@@ -1,10 +1,10 @@
-GOTEST_PKGS=./ ./bexpr
+GOTEST_PKGS=./
 
-./bexpr/grammar.go: ./bexpr/grammar.peg
+grammar.go: grammar.peg
 	@echo "Regenerating Parser"
-	@go generate ./bexpr
+	@go generate ./
 
-generate: ./bexpr/grammar.go
+generate: grammar.go
 
 test: generate
 	@go test $(GOTEST_PKGS)
@@ -19,11 +19,22 @@ coverage: generate
 fmt: generate
 	@gofmt -w -s
 
+examples: expr-parse expr-eval filter
+
+expr-parse:
+	@go build ./examples/expr-parse
+
+expr-eval:
+	@go build ./examples/expr-eval
+
+filter:
+	@go build ./examples/filter
+
 deps:
 	@go get github.com/mna/pigeon@master
 	@go get golang.org/x/tools/cmd/goimports
 	@go get golang.org/x/tools/cmd/cover
 	@go mod tidy
 
-.PHONY: generate test coverage fmt deps
+.PHONY: generate test coverage fmt deps bench examples expr-parse expr-eval filter
 

@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestCreate(t *testing.T) {
+func TestCreateEvaluator(t *testing.T) {
 	t.Parallel()
 
 	type testCase struct {
@@ -27,7 +27,7 @@ func TestCreate(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			expr, err := Create(tcase.expression, &tcase.config)
+			expr, err := CreateEvaluator(tcase.expression, &tcase.config)
 			if tcase.err == "" {
 				require.NoError(t, err)
 				require.NotNil(t, expr)

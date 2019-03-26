@@ -209,7 +209,7 @@ func TestEvaluate(t *testing.T) {
 				t.Run(fmt.Sprintf("#%d", i), func(t *testing.T) {
 					t.Parallel()
 
-					expr, err := Create(expressionTest.expression, nil)
+					expr, err := CreateEvaluator(expressionTest.expression, nil)
 					require.NoError(t, err)
 
 					match, err := expr.Evaluate(tcase.value)

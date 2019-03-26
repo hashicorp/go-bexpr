@@ -4,11 +4,11 @@ import (
 	"fmt"
 )
 
-func validateRecurse(ast Expr, fields FieldConfigurations, maxRawValueLength int) (int, error) {
+func validateRecurse(ast Expression, fields FieldConfigurations, maxRawValueLength int) (int, error) {
 	switch node := ast.(type) {
-	case *UnaryExpr:
+	case *UnaryExpression:
 		return validateRecurse(node, fields, maxRawValueLength)
-	case *BinaryExpr:
+	case *BinaryExpression:
 		leftMatches, err := validateRecurse(node.Left, fields, maxRawValueLength)
 		if err != nil {
 			return leftMatches, err
@@ -16,7 +16,7 @@ func validateRecurse(ast Expr, fields FieldConfigurations, maxRawValueLength int
 
 		rightMatches, err := validateRecurse(node.Right, fields, maxRawValueLength)
 		return leftMatches + rightMatches, err
-	case *MatchExpr:
+	case *MatchExpression:
 		if len(node.Selector) < 1 {
 			return 1, fmt.Errorf("Invalid selector: %q", node.Selector)
 		}
@@ -79,7 +79,7 @@ func validateRecurse(ast Expr, fields FieldConfigurations, maxRawValueLength int
 	return 0, fmt.Errorf("Cannot validate: Invalid AST")
 }
 
-func validate(ast Expr, fields FieldConfigurations, maxMatches, maxRawValueLength int) error {
+func validate(ast Expression, fields FieldConfigurations, maxMatches, maxRawValueLength int) error {
 	matches, err := validateRecurse(ast, fields, maxRawValueLength)
 	if err != nil {
 		return err

@@ -1,6 +1,7 @@
 // bexpr is an implementation of a generic boolean expression evaluator.
 // The general goal is to be able to evaluate some expression against some
-//
+// arbitrary data and get back a boolean of whether or not the data
+// was matched by the expression
 package bexpr
 
 import (
@@ -13,15 +14,12 @@ const (
 	defaultMaxRawValueLength = 512
 )
 
-// ExpressionEvaluator is the interface to implement to provide custom evaluation
+// MatchExpressionEvaluator is the interface to implement to provide custom evaluation
 // logic for a selector. This could be used to enable synthetic fields or other
 // more complex logic that the default behavior does not support
-//
-// Currently there is no way to go back to using the default behavior so if this is
-// implemented all subfields
-type ExpressionEvaluator interface {
+type MatchExpressionEvaluator interface {
 	// FieldConfigurations returns the configuration for this field and any subfields
-	// it may have. It must be valid to call this method on nil
+	// it may have. It must be valid to call this method on nil.
 	FieldConfigurations() FieldConfigurations
 
 	// EvaluateMatch returns whether there was a match or not. We are not also
@@ -32,7 +30,7 @@ type ExpressionEvaluator interface {
 
 type Evaluator struct {
 	// The syntax tree
-	ast Expr
+	ast Expression
 
 	// A few configurations for extra validation of the AST
 	config EvaluatorConfig
@@ -46,44 +44,58 @@ type Evaluator struct {
 	fields FieldConfigurations
 }
 
-func Create(expression string, config *EvaluatorConfig) (*Evaluator, error) {
-	return CreateForType(expression, config, nil)
+// Extra configuration used to perform further validation on a parsed
+// expression and to aid in the evaluation process
+type EvaluatorConfig struct {
+	// Maximum number of matching expressions allowed. 0 means unlimited
+	// This does not include and, or and not expressions within the AST
+	MaxMatches int
+	// Maximum length of raw values. 0 means unlimited
+	MaxRawValueLength int
+	// The Registry to use for validating expressions for a data type
+	// If nil the `DefaultRegistry` will be used. To disable using a
+	// registry all together you can set this to `NilRegistry`
+	Registry Registry
 }
 
-func CreateForType(expression string, config *EvaluatorConfig, dataType interface{}) (*Evaluator, error) {
+func CreateEvaluator(expression string, config *EvaluatorConfig) (*Evaluator, error) {
+	return CreateEvaluatorForType(expression, config, nil)
+}
+
+func CreateEvaluatorForType(expression string, config *EvaluatorConfig, dataType interface{}) (*Evaluator, error) {
 	ast, err := Parse("", []byte(expression))
 
 	if err != nil {
 		return nil, err
 	}
 
-	exp := &Evaluator{ast: ast.(Expr)}
+	eval := &Evaluator{ast: ast.(Expression)}
 
 	if config == nil {
-		config = &exp.config
+		config = &eval.config
 	}
-	err = exp.validate(config, dataType, true)
+	err = eval.validate(config, dataType, true)
 	if err != nil {
 		return nil, err
 	}
 
-	return exp, nil
+	return eval, nil
 }
 
-func (exp *Evaluator) Evaluate(datum interface{}) (bool, error) {
-	if exp.fields == nil {
-		err := exp.validate(&exp.config, datum, true)
+func (eval *Evaluator) Evaluate(datum interface{}) (bool, error) {
+	if eval.fields == nil {
+		err := eval.validate(&eval.config, datum, true)
 		if err != nil {
 			return false, err
 		}
-	} else if derefType(reflect.TypeOf(datum)) != exp.boundType {
-		return false, fmt.Errorf("This expression can only be used to evaluate matches against %s", exp.boundType)
+	} else if derefType(reflect.TypeOf(datum)) != eval.boundType {
+		return false, fmt.Errorf("This evaluator can only be used to evaluate matches against %s", eval.boundType)
 	}
 
-	return evaluate(exp.ast, datum, exp.fields)
+	return evaluate(eval.ast, datum, eval.fields)
 }
 
-func (exp *Evaluator) validate(config *EvaluatorConfig, dataType interface{}, updateEvaluator bool) error {
+func (eval *Evaluator) validate(config *EvaluatorConfig, dataType interface{}, updateEvaluator bool) error {
 	if config == nil {
 		return fmt.Errorf("Invalid config")
 	}
@@ -114,21 +126,21 @@ func (exp *Evaluator) validate(config *EvaluatorConfig, dataType interface{}, up
 		maxRawValueLength = defaultMaxRawValueLength
 	}
 
-	err = validate(exp.ast, fields, config.MaxMatches, config.MaxRawValueLength)
+	err = validate(eval.ast, fields, config.MaxMatches, config.MaxRawValueLength)
 	if err != nil {
 		return err
 	}
 
 	if updateEvaluator {
-		exp.config = *config
-		exp.fields = fields
-		exp.boundType = rtype
+		eval.config = *config
+		eval.fields = fields
+		eval.boundType = rtype
 	}
 
 	return nil
 }
 
 // Validates an existing expression against a possibly different configuration
-func (exp *Evaluator) Validate(config *EvaluatorConfig, dataType interface{}) error {
-	return exp.validate(config, dataType, false)
+func (eval *Evaluator) Validate(config *EvaluatorConfig, dataType interface{}) error {
+	return eval.validate(config, dataType, false)
 }

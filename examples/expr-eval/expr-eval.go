@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/hashicorp/go-filter/bexpr"
+	bexpr "github.com/hashicorp/go-bexpr"
 )
 
 type Internal struct {
@@ -83,7 +83,7 @@ var expressions []string = []string{
 
 func main() {
 	for _, expression := range expressions {
-		eval, err := bexpr.CreateForType(expression, nil, (*Matchable)(nil))
+		eval, err := bexpr.CreateEvaluatorForType(expression, nil, (*Matchable)(nil))
 
 		if err != nil {
 			fmt.Printf("Failed to create evaluator for expression %q: %v\n", expression, err)

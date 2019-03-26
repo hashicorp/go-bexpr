@@ -1,3 +1,3 @@
-/examples/expr-parse/expr-parse
-/examples/expr-eval/expr-eval
-/examples/filter/filter
+expr-parse
+expr-eval
+filter

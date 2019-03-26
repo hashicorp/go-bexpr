@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/hashicorp/go-filter"
+	bexpr "github.com/hashicorp/go-bexpr"
 )
 
 type Filterable struct {
@@ -28,7 +28,7 @@ func main() {
 		"five":  Filterable{X: 5, Y: 6},
 	}
 
-	filter, err := filter.Create("X == 2 or Y == 2", nil, (*Filterable)(nil))
+	filter, err := bexpr.CreateFilter("X == 2 or Y == 2", nil, (*Filterable)(nil))
 	if err != nil {
 		fmt.Printf("Failed to create filter: %v\n", err)
 		return
@@ -40,6 +40,7 @@ func main() {
 		return
 	}
 
+	fmt.Printf("Before: %v\n", before)
 	fmt.Printf("After: %v\n", after)
 
 	afterMap, err := filter.Execute(beforeMap)
@@ -48,5 +49,6 @@ func main() {
 		return
 	}
 
+	fmt.Printf("Before: %v\n", beforeMap)
 	fmt.Printf("After: %v\n", afterMap)
 }

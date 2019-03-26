@@ -87,14 +87,14 @@ func derefType(rtype reflect.Type) reflect.Type {
 	return rtype
 }
 
-func doMatchEqual(expression *MatchExpr, value reflect.Value) (bool, error) {
+func doMatchEqual(expression *MatchExpression, value reflect.Value) (bool, error) {
 	// NOTE: see preconditions in evaluateMatchExpressionRecurse
 	eqFn := primitiveEqualityFns[value.Kind()]
 	matchValue := getMatchExprValue(expression)
 	return eqFn(matchValue, value.Interface()), nil
 }
 
-func doMatchIn(expression *MatchExpr, value reflect.Value) (bool, error) {
+func doMatchIn(expression *MatchExpression, value reflect.Value) (bool, error) {
 	// NOTE: see preconditions in evaluateMatchExpressionRecurse
 	matchValue := getMatchExprValue(expression)
 
@@ -124,12 +124,12 @@ func doMatchIn(expression *MatchExpr, value reflect.Value) (bool, error) {
 	}
 }
 
-func doMatchIsEmpty(matcher *MatchExpr, value reflect.Value) (bool, error) {
+func doMatchIsEmpty(matcher *MatchExpression, value reflect.Value) (bool, error) {
 	// NOTE: see preconditions in evaluateMatchExpressionRecurse
 	return value.Len() == 0, nil
 }
 
-func getMatchExprValue(expression *MatchExpr) interface{} {
+func getMatchExprValue(expression *MatchExpression) interface{} {
 	// NOTE: see preconditions in evaluateMatchExpressionRecurse
 	if expression.Value == nil {
 		return nil
@@ -142,7 +142,7 @@ func getMatchExprValue(expression *MatchExpr) interface{} {
 	return expression.Value.Raw
 }
 
-func evaluateMatchExpressionRecurse(expression *MatchExpr, depth int, rvalue reflect.Value, fields FieldConfigurations) (bool, error) {
+func evaluateMatchExpressionRecurse(expression *MatchExpression, depth int, rvalue reflect.Value, fields FieldConfigurations) (bool, error) {
 	// NOTE: Some information about preconditions is probably good to have here. Parsing
 	//       as well as the extra validation pass that MUST occur before executing the
 	//       expression evaluation allow us to make some assumptions here.
@@ -202,14 +202,14 @@ func evaluateMatchExpressionRecurse(expression *MatchExpr, depth int, rvalue ref
 
 		value := reflect.Indirect(rvalue.FieldByName(fieldName))
 
-		if matcher, ok := value.Interface().(ExpressionEvaluator); ok {
+		if matcher, ok := value.Interface().(MatchExpressionEvaluator); ok {
 			return matcher.EvaluateMatch(expression.Selector[depth+1:], expression.Operator, getMatchExprValue(expression))
 		}
 
 		return evaluateMatchExpressionRecurse(expression, depth+1, value, fieldConfig.SubFields)
 
 	case reflect.Slice, reflect.Array:
-		// TODO (mkeeler) - Should we support implementing the ExpressionEvaluator interface for slice/array types?
+		// TODO (mkeeler) - Should we support implementing the MatchExpressionEvaluator interface for slice/array types?
 		//                  Punting on that for now.
 		for i := 0; i < rvalue.Len(); i++ {
 			item := reflect.Indirect(rvalue.Index(i))
@@ -228,7 +228,7 @@ func evaluateMatchExpressionRecurse(expression *MatchExpr, depth int, rvalue ref
 
 		return false, nil
 	case reflect.Map:
-		// TODO (mkeeler) - Should we support implementing the ExpressionEvaluator interface for map types
+		// TODO (mkeeler) - Should we support implementing the MatchExpressionEvaluator interface for map types
 		//                  such as the FieldConfigurations type? Maybe later
 		//
 		value := reflect.Indirect(rvalue.MapIndex(reflect.ValueOf(expression.Selector[depth])))
@@ -247,7 +247,7 @@ func evaluateMatchExpressionRecurse(expression *MatchExpr, depth int, rvalue ref
 			}
 		}
 
-		if matcher, ok := value.Interface().(ExpressionEvaluator); ok {
+		if matcher, ok := value.Interface().(MatchExpressionEvaluator); ok {
 			return matcher.EvaluateMatch(expression.Selector[depth+1:], expression.Operator, getMatchExprValue(expression))
 		}
 
@@ -257,8 +257,8 @@ func evaluateMatchExpressionRecurse(expression *MatchExpr, depth int, rvalue ref
 	}
 }
 
-func evaluateMatchExpression(expression *MatchExpr, datum interface{}, fields FieldConfigurations) (bool, error) {
-	if matcher, ok := datum.(ExpressionEvaluator); ok {
+func evaluateMatchExpression(expression *MatchExpression, datum interface{}, fields FieldConfigurations) (bool, error) {
+	if matcher, ok := datum.(MatchExpressionEvaluator); ok {
 		return matcher.EvaluateMatch(expression.Selector, expression.Operator, getMatchExprValue(expression))
 	}
 
@@ -267,15 +267,15 @@ func evaluateMatchExpression(expression *MatchExpr, datum interface{}, fields Fi
 	return evaluateMatchExpressionRecurse(expression, 0, rvalue, fields)
 }
 
-func evaluate(ast Expr, datum interface{}, fields FieldConfigurations) (bool, error) {
+func evaluate(ast Expression, datum interface{}, fields FieldConfigurations) (bool, error) {
 	switch node := ast.(type) {
-	case *UnaryExpr:
+	case *UnaryExpression:
 		switch node.Operator {
 		case UnaryOpNot:
 			result, err := evaluate(node.Operand, datum, fields)
 			return !result, err
 		}
-	case *BinaryExpr:
+	case *BinaryExpression:
 		switch node.Operator {
 		case BinaryOpAnd:
 			result, err := evaluate(node.Left, datum, fields)
@@ -293,7 +293,7 @@ func evaluate(ast Expr, datum interface{}, fields FieldConfigurations) (bool, er
 
 			return evaluate(node.Right, datum, fields)
 		}
-	case *MatchExpr:
+	case *MatchExpression:
 		return evaluateMatchExpression(node, datum, fields)
 	}
 	return false, fmt.Errorf("Invalid AST node")

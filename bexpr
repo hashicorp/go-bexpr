@@ -1,0 +1,18 @@
+bexpr
+   Expression - the main AST interface
+      AndExpression - AST "and"
+      OrExpression - AST "or"
+      NotExpression - AST "not"
+      MatchExpression - AST value matching
+      MatchValue - AST value
+   Evaluator - the main boolean expression evaluator
+      CreateEvaluator
+   MatchExpressionEvaluator - interface to implement to override
+      the default reflection based evaluation for a type
+   ValidatorConfig - extra configuration for validation
+   Filter - Uses a Evaluator to filter a list or map
+   Registry - main type registry interface
+   SyncRegistry - concurrency safe registry (DefaultRegistry is one of these)
+
+   FieldConfiguration - configurations for how to operate on a single field (part of a selector)
+

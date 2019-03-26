@@ -31,9 +31,9 @@ type FieldConfiguration struct {
 	SubFields FieldConfigurations
 
 	// Function to run on the raw string value present in the expression
-	// syntax to coerce into whatever form the ExpressionEvaluator wants
+	// syntax to coerce into whatever form the MatchExpressionEvaluator wants
 	// The coercion happens only once and will then be passed as the `value`
-	// parameter to all EvaluateMatch invocations on the ExpressionEvaluator.
+	// parameter to all EvaluateMatch invocations on the MatchExpressionEvaluator.
 	CoerceFn FieldValueCoercionFn
 
 	// List of MatchOperators supported for this field. This configuration
@@ -44,28 +44,14 @@ type FieldConfiguration struct {
 // Represents all the valid fields and their corresponding configuration
 type FieldConfigurations map[FieldName]*FieldConfiguration
 
-// Extra configuration used to perform further validation on a parsed
-// expression and to aid in the evaluation process
-type EvaluatorConfig struct {
-	// Maximum number of matching expressions allowed. 0 means unlimited
-	// This does not include and, or and not expressions within the AST
-	MaxMatches int
-	// Maximum length of raw values. 0 means unlimited
-	MaxRawValueLength int
-	// The Registry to use for validating expressions for a data type
-	// If nil the `DefaultRegistry` will be used. To disable using a
-	// registry all together you can set this to `NilRegistry`
-	Registry Registry
-}
-
 func generateFieldConfigurationInterface(rtype reflect.Type) (FieldConfigurations, bool) {
 	// Handle those types that implement our interface
-	if rtype.Implements(reflect.TypeOf((*ExpressionEvaluator)(nil)).Elem()) {
+	if rtype.Implements(reflect.TypeOf((*MatchExpressionEvaluator)(nil)).Elem()) {
 
 		// TODO (mkeeler) Do we need to new a value just to call the function? Potentially we can
 		// lookup the func and invoke it with a nil pointer?
 		value := reflect.New(rtype)
-		configs := value.Interface().(ExpressionEvaluator).FieldConfigurations()
+		configs := value.Interface().(MatchExpressionEvaluator).FieldConfigurations()
 		return configs, true
 	}
 
@@ -282,5 +268,5 @@ func generateFieldConfigurations(rtype reflect.Type) (FieldConfigurations, error
 		}, nil
 	}
 
-	return nil, fmt.Errorf("Invalid top level type - can only use structs, map[string]* or an ExpressionEvaluator")
+	return nil, fmt.Errorf("Invalid top level type - can only use structs, map[string]* or an MatchExpressionEvaluator")
 }

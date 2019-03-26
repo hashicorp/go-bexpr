@@ -74,7 +74,7 @@ func TestGenerateFieldConfigurations(t *testing.T) {
 		fields, err := GenerateFieldConfigurations(ttype)
 		require.Len(t, fields, 0)
 		require.Error(t, err)
-		require.EqualError(t, err, "Invalid top level type - can only use structs, map[string]* or an ExpressionEvaluator")
+		require.EqualError(t, err, "Invalid top level type - can only use structs, map[string]* or an MatchExpressionEvaluator")
 	})
 
 	t.Run("Nested Structs And Maps", func(t *testing.T) {
