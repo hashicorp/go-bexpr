@@ -52,9 +52,13 @@ type EvaluatorConfig struct {
 	MaxMatches int
 	// Maximum length of raw values. 0 means unlimited
 	MaxRawValueLength int
+	// The Registry to use for validating expressions for a data type
+	// If nil the `DefaultRegistry` will be used. To disable using a
+	// registry all together you can set this to `NilRegistry`
+	Registry Registry
 }
 
-func generateFieldConfigurationInternal(rtype reflect.Type) (*FieldConfiguration, error) {
+func generateFieldConfigurationInterface(rtype reflect.Type) (FieldConfigurations, bool) {
 	// Handle those types that implement our interface
 	if rtype.Implements(reflect.TypeOf((*ExpressionEvaluator)(nil)).Elem()) {
 
@@ -62,9 +66,16 @@ func generateFieldConfigurationInternal(rtype reflect.Type) (*FieldConfiguration
 		// lookup the func and invoke it with a nil pointer?
 		value := reflect.New(rtype)
 		configs := value.Interface().(ExpressionEvaluator).FieldConfigurations()
+		return configs, true
+	}
 
+	return nil, false
+}
+
+func generateFieldConfigurationInternal(rtype reflect.Type) (*FieldConfiguration, error) {
+	if fields, ok := generateFieldConfigurationInterface(rtype); ok {
 		return &FieldConfiguration{
-			SubFields: configs,
+			SubFields: fields,
 		}, nil
 	}
 
@@ -238,41 +249,38 @@ func generateStructFieldConfigurations(rtype reflect.Type) (FieldConfigurations,
 //         present then this behavior is overridden.
 //       - Exported fields can be made unselectable by adding a tag to the field like `bexpr:"-"`
 func GenerateFieldConfigurations(topLevelType interface{}) (FieldConfigurations, error) {
-	fields, _, err := generateFieldConfigurationsAndType(topLevelType)
-	return fields, err
+	return generateFieldConfigurations(derefType(reflect.TypeOf(topLevelType)))
 }
 
-func generateFieldConfigurationsAndType(topLevelType interface{}) (FieldConfigurations, reflect.Type, error) {
-	rtype := derefType(reflect.TypeOf(topLevelType))
-
-	if expressionEval, ok := topLevelType.(ExpressionEvaluator); ok {
-		return expressionEval.FieldConfigurations(), rtype, nil
+func generateFieldConfigurations(rtype reflect.Type) (FieldConfigurations, error) {
+	if fields, ok := generateFieldConfigurationInterface(rtype); ok {
+		return fields, nil
 	}
 
 	switch rtype.Kind() {
 	case reflect.Struct:
 		fields, err := generateStructFieldConfigurations(rtype)
-		return fields, rtype, err
+		return fields, err
 	case reflect.Map:
 		if rtype.Key().Kind() != reflect.String {
-			return nil, rtype, fmt.Errorf("Cannot generate FieldConfigurations for maps with keys that are not strings")
+			return nil, fmt.Errorf("Cannot generate FieldConfigurations for maps with keys that are not strings")
 		}
 
 		elemType := derefType(rtype.Elem())
 
 		field, err := generateFieldConfigurationInternal(elemType)
 		if err != nil {
-			return nil, rtype, err
+			return nil, err
 		}
 
 		if field == nil {
-			return nil, rtype, nil
+			return nil, nil
 		}
 
 		return FieldConfigurations{
 			FieldNameAny: field,
-		}, rtype, nil
+		}, nil
 	}
 
-	return nil, rtype, fmt.Errorf("Invalid top level type - can only use structs, map[string]* or an ExpressionEvaluator")
+	return nil, fmt.Errorf("Invalid top level type - can only use structs, map[string]* or an ExpressionEvaluator")
 }

@@ -92,7 +92,13 @@ func (exp *Evaluator) validate(config *EvaluatorConfig, dataType interface{}, up
 	var err error
 	var rtype reflect.Type
 	if dataType != nil {
-		fields, rtype, err = generateFieldConfigurationsAndType(dataType)
+		registry := DefaultRegistry
+		if config.Registry != nil {
+			registry = config.Registry
+		}
+
+		rtype = derefType(reflect.TypeOf(dataType))
+		fields, err = registry.GetFieldConfigurations(rtype)
 		if err != nil {
 			return err
 		}

@@ -9,6 +9,9 @@ generate: ./bexpr/grammar.go
 test: generate
 	@go test $(GOTEST_PKGS)
 
+bench: generate
+	@go test -bench . $(GOTEST_PKGS)
+
 coverage: generate
 	@go test -coverprofile /tmp/coverage.out $(GOTEST_PKGS)
 	@go tool cover -html /tmp/coverage.out
