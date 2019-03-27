@@ -1,5 +1,6 @@
-GOTEST_PKGS=$(go list ./... | grep -v examples)
+GOTEST_PKGS=$(shell go list ./... | grep -v examples)
 
+TEST_RESULTS?="/tmp/test-results"
 grammar.go: grammar.peg
 	@echo "Regenerating Parser"
 	@go generate ./
@@ -8,6 +9,9 @@ generate: grammar.go
 
 test: generate
 	@go test $(GOTEST_PKGS)
+
+test-ci: generate
+	@gotestsum --junitfile $(TEST_RESULTS)/gotestsum-report.xml -- $(GOTEST_PKGS)
 
 bench: generate
 	@go test -bench . $(GOTEST_PKGS)
