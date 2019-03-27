@@ -1,4 +1,4 @@
-GOTEST_PKGS=./
+GOTEST_PKGS=$(go list ./... | grep -v examples)
 
 grammar.go: grammar.peg
 	@echo "Regenerating Parser"
