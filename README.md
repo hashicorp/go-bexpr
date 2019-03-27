@@ -1,6 +1,6 @@
-Generic boolean expression evaluation on Go Data Structures [![GoDoc](https://godoc.org/github.com/hashicorp/go-bexpr?status.svg)](https://godoc.org/github.com/hashicorp/go-bexpr) [![CircleCI](https://circleci.com/gh/hashicorp/go-bexpr.svg?style=svg)](https://circleci.com/gh/hashicorp/go-bexpr)
+# bexpr - Boolean Expression Evaluator [![GoDoc](https://godoc.org/github.com/hashicorp/go-bexpr?status.svg)](https://godoc.org/github.com/hashicorp/go-bexpr) [![CircleCI](https://circleci.com/gh/hashicorp/go-bexpr.svg?style=svg)](https://circleci.com/gh/hashicorp/go-bexpr)
 
-`go-bexpr` is a Go (golang) library to provide generic boolean expression evaluation and filtering for Go data structures.
+`bexpr` is a Go (golang) library to provide generic boolean expression evaluation and filtering for Go data structures.
 
 ## Usage (Reflection)
 
