@@ -109,7 +109,19 @@ func (eval *Evaluator) validate(config *EvaluatorConfig, dataType interface{}, u
 			registry = config.Registry
 		}
 
-		rtype = derefType(reflect.TypeOf(dataType))
+		switch t := dataType.(type) {
+		case reflect.Type:
+			rtype = derefType(t)
+		case *reflect.Type:
+			rtype = derefType(*t)
+		case reflect.Value:
+			rtype = derefType(t.Type())
+		case *reflect.Value:
+			rtype = derefType(t.Type())
+		default:
+			rtype = derefType(reflect.TypeOf(dataType))
+		}
+
 		fields, err = registry.GetFieldConfigurations(rtype)
 		if err != nil {
 			return err

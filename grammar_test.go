@@ -357,3 +357,34 @@ func TestExpressionParsing(t *testing.T) {
 		})
 	}
 }
+
+func BenchmarkExpressionParsing(b *testing.B) {
+	benchmarks := map[string]string{
+		"Equals":                "foo == 3",
+		"Not Equals":            "foo != 3",
+		"In":                    "foo in bar",
+		"Not In":                "foo not in bar",
+		"Contains":              "bar not contains foo",
+		"Not Contains":          "bar not contains foo",
+		"Is Empty":              "foo is empty",
+		"Is Not Empty":          "foo is not empty",
+		"Not In Or Equals":      "foo not in bar or bar.foo == 3",
+		"In And Not Equals":     "foo in bar and bar.foo != \"\"",
+		"Not Equals And Equals": "not (foo == 3 and bar == 4)",
+		"Big Selectors":         "abcdefghijklmnopqrstuvwxyz.foo.bar.baz.one.two.three.four.five.six.seven.eight.nine.ten == 42",
+		"Many Ors":              "foo == 3 or bar in baz or one != two or next is empty or other is not empty or name == \"\"",
+		"Lots of Ops":           "foo == 3 and not bar in baz and not one != two or next is empty and not foo is not empty and bar not in foo",
+		"Lots of Parens ":       "(((foo == 3) and (not ((bar in baz) and (not (one != two))))) or (((next is empty) and (not (foo is not empty))) and (bar not in foo)))",
+	}
+	for name, bm := range benchmarks {
+		b.Run(name, func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				expr, err := Parse("", []byte(bm))
+				// this extra verification does add roughly 2k-3k ns/op to each iteration
+				// we could disable it but its good to also have these checks to ensure the parser is working for some of the crazier inputs here
+				require.NoError(b, err)
+				require.NotNil(b, expr)
+			}
+		})
+	}
+}

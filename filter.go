@@ -10,14 +10,21 @@ type Filter struct {
 	evaluator *Evaluator
 }
 
+func getElementType(dataType interface{}) reflect.Type {
+	rtype := derefType(reflect.TypeOf(dataType))
+	switch rtype.Kind() {
+	case reflect.Map, reflect.Slice, reflect.Array:
+		return derefType(rtype.Elem())
+	default:
+		return rtype
+	}
+}
+
 // Creates a filter to operate on the given data type.
 // The data type is the type of the elements that will be filtered and not the top level container type.
 // For example, if you want to filter a []Foo then the data type to pass here is Foo.
 func CreateFilter(expression string, config *EvaluatorConfig, dataType interface{}) (*Filter, error) {
-	// TODO (mkeeler) - figure out how to allow getting rid of the top level map[*] or slice/array and getting
-	// just the elem. I think this will require allowing the bexpr code to take reflect.Type instead of
-	// unconditionally grabbing the type via reflect.TypeOf
-	exp, err := CreateEvaluatorForType(expression, config, dataType)
+	exp, err := CreateEvaluatorForType(expression, config, getElementType(dataType))
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create boolean expression evaluator: %v", err)
 	}
