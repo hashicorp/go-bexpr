@@ -27,7 +27,13 @@ func CreateFilter(expression string, config *EvaluatorConfig, dataType interface
 	}, nil
 }
 
+// Execute the filter. If called on a nil filter this is a no-op and
+// will return the original data
 func (f *Filter) Execute(data interface{}) (interface{}, error) {
+	if f == nil {
+		return data, nil
+	}
+
 	rvalue := reflect.ValueOf(data)
 	rtype := rvalue.Type()
 
