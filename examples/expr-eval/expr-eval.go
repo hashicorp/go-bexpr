@@ -7,14 +7,26 @@ import (
 )
 
 type Internal struct {
-	Name   string
-	Values []int
+	Name string
+
+	// Use an alternative name for referencing this field in expressions
+	Values []int `bexpr:"fields"`
+
+	// Hides this field so it cannot be used in expression evaluation
+	Hidden int `bexpr:"-"`
+
+	// Unexported fields are not available for use by the evaluator
+	unexported int
 }
 
 type Matchable struct {
-	Map           map[string]string
-	X             int
-	Internal      Internal
+	Map      map[string]string
+	X        int
+	Internal Internal
+
+	// Slices are handled specially. If any value within the slice
+	// evaluates to true the overall evaluation for the slice will
+	// be true.
 	SliceInternal []Internal
 	MapInternal   map[string]Internal
 }
@@ -65,16 +77,20 @@ var data Matchable = Matchable{
 var expressions []string = []string{
 	// should error out in creating the evaluator as Foo is not a valid selector
 	"Foo == 3",
+	// should error out because the field is hidden
+	"Internal.Hidden == 5",
+	// should error out because the field is not exported
+	"Internal.unexported == 3",
 	// should evaluate to true
 	"Map[`abc`] == `def`",
 	// should evaluate to false
 	"X == 3",
 	// should evaluate to true
-	"Internal.Values is not empty",
+	"Internal.fields is not empty",
 	// should evaluate to true
-	"0 in SliceInternal.Values",
+	"0 in SliceInternal.fields",
 	// should evaluate to false
-	"4 not in SliceInternal.Values",
+	"4 not in SliceInternal.fields",
 	// should evaluate to false
 	"MapInternal.fib.Name != fib",
 	// should evaluate to true

@@ -19,7 +19,10 @@ coverage: generate
 fmt: generate
 	@gofmt -w -s
 
-examples: expr-parse expr-eval filter
+examples: simple expr-parse expr-eval filter
+
+simple:
+	@go build ./examples/simple
 
 expr-parse:
 	@go build ./examples/expr-parse
