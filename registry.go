@@ -24,8 +24,6 @@ func NewSyncRegistry() *SyncRegistry {
 
 func (r *SyncRegistry) GetFieldConfigurations(rtype reflect.Type) (FieldConfigurations, error) {
 	if r != nil {
-		rtype := derefType(rtype)
-
 		r.lock.RLock()
 		configurations, ok := r.configurations[rtype]
 		r.lock.RUnlock()

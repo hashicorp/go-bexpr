@@ -47,11 +47,12 @@ type FieldConfigurations map[FieldName]*FieldConfiguration
 func generateFieldConfigurationInterface(rtype reflect.Type) (FieldConfigurations, bool) {
 	// Handle those types that implement our interface
 	if rtype.Implements(reflect.TypeOf((*MatchExpressionEvaluator)(nil)).Elem()) {
-
 		// TODO (mkeeler) Do we need to new a value just to call the function? Potentially we can
 		// lookup the func and invoke it with a nil pointer?
 		value := reflect.New(rtype)
-		configs := value.Interface().(MatchExpressionEvaluator).FieldConfigurations()
+		// have to take the Elem() of the new value because New gives us a ptr to the type that
+		// we checked if it implements the interface
+		configs := value.Elem().Interface().(MatchExpressionEvaluator).FieldConfigurations()
 		return configs, true
 	}
 
@@ -65,6 +66,9 @@ func generateFieldConfigurationInternal(rtype reflect.Type) (*FieldConfiguration
 		}, nil
 	}
 
+	// must be done after checking for interface implementing
+	rtype = derefType(rtype)
+
 	// Handle primitive types
 	if coerceFn, ok := primitiveCoercionFns[rtype.Kind()]; ok {
 		return &FieldConfiguration{
@@ -76,9 +80,9 @@ func generateFieldConfigurationInternal(rtype reflect.Type) (*FieldConfiguration
 	// Handle compound types
 	switch rtype.Kind() {
 	case reflect.Map:
-		return generateMapFieldConfiguration(derefType(rtype.Key()), derefType(rtype.Elem()))
+		return generateMapFieldConfiguration(derefType(rtype.Key()), rtype.Elem())
 	case reflect.Array, reflect.Slice:
-		return generateSliceFieldConfiguration(derefType(rtype.Elem()))
+		return generateSliceFieldConfiguration(rtype.Elem())
 	case reflect.Struct:
 		subfields, err := generateStructFieldConfigurations(rtype)
 		if err != nil {
@@ -180,7 +184,7 @@ func generateStructFieldConfigurations(rtype reflect.Type) (FieldConfigurations,
 			fieldNames = append(fieldNames, field.Name)
 		}
 
-		cfg, err := generateFieldConfigurationInternal(derefType(field.Type))
+		cfg, err := generateFieldConfigurationInternal(field.Type)
 		if err != nil {
 			return nil, err
 		}
@@ -235,13 +239,16 @@ func generateStructFieldConfigurations(rtype reflect.Type) (FieldConfigurations,
 //         present then this behavior is overridden.
 //       - Exported fields can be made unselectable by adding a tag to the field like `bexpr:"-"`
 func GenerateFieldConfigurations(topLevelType interface{}) (FieldConfigurations, error) {
-	return generateFieldConfigurations(derefType(reflect.TypeOf(topLevelType)))
+	return generateFieldConfigurations(reflect.TypeOf(topLevelType))
 }
 
 func generateFieldConfigurations(rtype reflect.Type) (FieldConfigurations, error) {
 	if fields, ok := generateFieldConfigurationInterface(rtype); ok {
 		return fields, nil
 	}
+
+	// Do this after we check for interface implementation
+	rtype = derefType(rtype)
 
 	switch rtype.Kind() {
 	case reflect.Struct:
@@ -252,7 +259,7 @@ func generateFieldConfigurations(rtype reflect.Type) (FieldConfigurations, error
 			return nil, fmt.Errorf("Cannot generate FieldConfigurations for maps with keys that are not strings")
 		}
 
-		elemType := derefType(rtype.Elem())
+		elemType := rtype.Elem()
 
 		field, err := generateFieldConfigurationInternal(elemType)
 		if err != nil {

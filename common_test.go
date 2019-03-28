@@ -3,6 +3,7 @@ package bexpr
 import (
 	"flag"
 	"fmt"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -35,6 +36,23 @@ type testFlatStruct struct {
 	Hidden     bool `bexpr:"-"`
 }
 
+var testFlatStructKindMap map[string]reflect.Kind = map[string]reflect.Kind{
+	"Int":     reflect.Int,
+	"Int8":    reflect.Int8,
+	"Int16":   reflect.Int16,
+	"Int32":   reflect.Int32,
+	"Int64":   reflect.Int64,
+	"Uint":    reflect.Uint,
+	"Uint8":   reflect.Uint8,
+	"Uint16":  reflect.Uint16,
+	"Uint32":  reflect.Uint32,
+	"Uint64":  reflect.Uint64,
+	"Float32": reflect.Float32,
+	"Float64": reflect.Float64,
+	"Bool":    reflect.Bool,
+	"String":  reflect.String,
+}
+
 type testNestedLevel2_1 struct {
 	Foo int
 	bar string
@@ -59,6 +77,93 @@ type testNestedLevel1 struct {
 type testNestedTypes struct {
 	Nested testNestedLevel1
 	TopInt int
+}
+
+type testStructInterfaceImpl struct {
+	storage map[string]*testFlatStruct
+}
+
+func (t *testStructInterfaceImpl) FieldConfigurations() FieldConfigurations {
+	// only going to allow foo, bar and baz for selectors
+
+	subfields, _ := GenerateFieldConfigurations((*testFlatStruct)(nil))
+
+	fields := make(FieldConfigurations)
+
+	subfield := &FieldConfiguration{
+		SubFields: subfields,
+	}
+	fields[FieldName("foo")] = subfield
+	fields[FieldName("bar")] = subfield
+	fields[FieldName("baz")] = subfield
+
+	return fields
+}
+
+func (t *testStructInterfaceImpl) EvaluateMatch(sel Selector, op MatchOperator, value interface{}) (bool, error) {
+	switch sel[0] {
+	case "foo", "bar", "baz":
+		storageVal, ok := t.storage[sel[0]]
+		if !ok {
+			// default to no match if this struct isn't stored
+			return false, nil
+		}
+
+		if len(sel) < 2 {
+			return false, fmt.Errorf("Need more selector")
+		}
+
+		dataType, ok := testFlatStructKindMap[sel[1]]
+		if !ok {
+			return false, fmt.Errorf("Invalid selector")
+		}
+
+		eqFn, ok := primitiveEqualityFns[dataType]
+		if !ok {
+			return false, fmt.Errorf("Invalid data type")
+		}
+
+		result := false
+		switch sel[1] {
+		case "Int":
+			result = eqFn(storageVal.Int, value)
+		case "Int8":
+			result = eqFn(storageVal.Int8, value)
+		case "Int16":
+			result = eqFn(storageVal.Int16, value)
+		case "Int32":
+			result = eqFn(storageVal.Int32, value)
+		case "Int64":
+			result = eqFn(storageVal.Int64, value)
+		case "Uint":
+			result = eqFn(storageVal.Uint, value)
+		case "Uint8":
+			result = eqFn(storageVal.Uint8, value)
+		case "Uint16":
+			result = eqFn(storageVal.Uint16, value)
+		case "Uint32":
+			result = eqFn(storageVal.Uint32, value)
+		case "Uint64":
+			result = eqFn(storageVal.Uint64, value)
+		case "Float32":
+			result = eqFn(storageVal.Float32, value)
+		case "Float64":
+			result = eqFn(storageVal.Float64, value)
+		case "Bool":
+			result = eqFn(storageVal.Bool, value)
+		case "String":
+			result = eqFn(storageVal.String, value)
+		default:
+			return false, fmt.Errorf("Invalid data type")
+		}
+
+		if op == MatchNotEqual {
+			return !result, nil
+		}
+		return result, nil
+	default:
+		return false, fmt.Errorf("Invalid selector")
+	}
 }
 
 func validateFieldConfigurationsRecurse(t *testing.T, expected, actual FieldConfigurations, path string) bool {

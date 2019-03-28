@@ -88,7 +88,7 @@ func (eval *Evaluator) Evaluate(datum interface{}) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-	} else if derefType(reflect.TypeOf(datum)) != eval.boundType {
+	} else if reflect.TypeOf(datum) != eval.boundType {
 		return false, fmt.Errorf("This evaluator can only be used to evaluate matches against %s", eval.boundType)
 	}
 
@@ -111,20 +111,24 @@ func (eval *Evaluator) validate(config *EvaluatorConfig, dataType interface{}, u
 
 		switch t := dataType.(type) {
 		case reflect.Type:
-			rtype = derefType(t)
+			rtype = t
 		case *reflect.Type:
-			rtype = derefType(*t)
+			rtype = *t
 		case reflect.Value:
-			rtype = derefType(t.Type())
+			rtype = t.Type()
 		case *reflect.Value:
-			rtype = derefType(t.Type())
+			rtype = t.Type()
 		default:
-			rtype = derefType(reflect.TypeOf(dataType))
+			rtype = reflect.TypeOf(dataType)
 		}
 
 		fields, err = registry.GetFieldConfigurations(rtype)
 		if err != nil {
 			return err
+		}
+
+		if len(fields) < 1 {
+			return fmt.Errorf("Data type %s has no evaluatable fields", rtype.String())
 		}
 	}
 
