@@ -336,6 +336,40 @@ func TestExpressionParsing(t *testing.T) {
 			expected: &MatchExpression{Selector: Selector{"foo"}, Operator: MatchEqual, Value: &MatchValue{Raw: "3"}},
 			err:      "",
 		},
+		"Complex": {
+			input: "(((foo == 3) and (not ((bar in baz) and (not (one != two))))) or (((next is empty) and (not (foo is not empty))) and (bar not in foo)))",
+			expected: &BinaryExpression{
+				Operator: BinaryOpOr,
+				Left: &BinaryExpression{
+					Operator: BinaryOpAnd,
+					Left:     &MatchExpression{Selector: Selector{"foo"}, Operator: MatchEqual, Value: &MatchValue{Raw: "3"}},
+					Right: &UnaryExpression{
+						Operator: UnaryOpNot,
+						Operand: &BinaryExpression{
+							Operator: BinaryOpAnd,
+							Left:     &MatchExpression{Selector: Selector{"baz"}, Operator: MatchIn, Value: &MatchValue{Raw: "bar"}},
+							Right: &UnaryExpression{
+								Operator: UnaryOpNot,
+								Operand:  &MatchExpression{Selector: Selector{"one"}, Operator: MatchNotEqual, Value: &MatchValue{Raw: "two"}},
+							},
+						},
+					},
+				},
+				Right: &BinaryExpression{
+					Operator: BinaryOpAnd,
+					Left: &BinaryExpression{
+						Operator: BinaryOpAnd,
+						Left:     &MatchExpression{Selector: Selector{"next"}, Operator: MatchIsEmpty, Value: nil},
+						Right: &UnaryExpression{
+							Operator: UnaryOpNot,
+							Operand:  &MatchExpression{Selector: Selector{"foo"}, Operator: MatchIsNotEmpty, Value: nil},
+						},
+					},
+					Right: &MatchExpression{Selector: Selector{"foo"}, Operator: MatchNotIn, Value: &MatchValue{Raw: "bar"}},
+				},
+			},
+			err: "",
+		},
 	}
 
 	for name, tcase := range tests {
