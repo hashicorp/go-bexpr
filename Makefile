@@ -10,6 +10,13 @@ else
 BENCHFULL_ARG=
 endif
 
+TEST_VERBOSE?=0
+ifeq (${TEST_VERBOSE},1)
+TEST_VERBOSE_ARG=-v
+else
+TEST_VERBOSE_ARG=
+endif
+
 TEST_RESULTS?="/tmp/test-results"
 grammar.go: grammar.peg
 	@echo "Regenerating Parser"
@@ -18,13 +25,13 @@ grammar.go: grammar.peg
 generate: grammar.go
 
 test: generate
-	@go test $(GOTEST_PKGS)
+	@go test $(TEST_VERBOSE_ARG) $(GOTEST_PKGS)
 
 test-ci: generate
 	@gotestsum --junitfile $(TEST_RESULTS)/gotestsum-report.xml -- $(GOTEST_PKGS)
 
 bench: generate
-	@go test -run DONTRUNTESTS -bench $(BENCHTESTS) $(BENCHFULL_ARG) -benchtime=$(BENCHTIME) $(GOTEST_PKGS)
+	@go test $(TEST_VERBOSE_ARG) -run DONTRUNTESTS -bench $(BENCHTESTS) $(BENCHFULL_ARG) -benchtime=$(BENCHTIME) $(GOTEST_PKGS)
 
 coverage: generate
 	@go test -coverprofile /tmp/coverage.out $(GOTEST_PKGS)

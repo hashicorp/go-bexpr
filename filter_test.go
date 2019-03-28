@@ -162,7 +162,10 @@ func BenchmarkFilter(b *testing.B) {
 
 	// The expressions used here are purposefully simple\
 	// This is meant to bencharmk the filter execution timing
-	// more than the boolean expression evaluation
+	// more than the boolean expression evaluation. That includes
+	// handling the top level container and generating a new one.
+	// The BenchmarkEvaluate function handles benchmarking most
+	// of the underlying evaluation.
 	cases := map[string]benchCase{
 		"Slice": benchCase{
 			"X==1",

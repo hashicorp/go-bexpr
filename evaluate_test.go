@@ -19,7 +19,7 @@ type expressionTest struct {
 	expressions []expressionCheck
 }
 
-var testCases map[string]expressionTest = map[string]expressionTest{
+var evaluateTests map[string]expressionTest = map[string]expressionTest{
 	"Flat Struct": {
 		testFlatStruct{
 			Int:        -1,
@@ -196,7 +196,7 @@ var testCases map[string]expressionTest = map[string]expressionTest{
 
 func TestEvaluate(t *testing.T) {
 	t.Parallel()
-	for name, tcase := range testCases {
+	for name, tcase := range evaluateTests {
 		// capture these values in the closure
 		name := name
 		tcase := tcase
@@ -227,7 +227,7 @@ func TestEvaluate(t *testing.T) {
 }
 
 func BenchmarkEvaluate(b *testing.B) {
-	for name, tcase := range testCases {
+	for name, tcase := range evaluateTests {
 		// capture these values in the closure
 		name := name
 		tcase := tcase
