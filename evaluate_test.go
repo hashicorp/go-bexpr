@@ -328,12 +328,13 @@ func BenchmarkEvaluate(b *testing.B) {
 		tcase := tcase
 		b.Run(name, func(b *testing.B) {
 			for i, expTest := range tcase.expressions {
-				if !expTest.benchQuick && !FullBenchmarks() {
-					continue
-				}
 				// capture these values in the closure
 				expTest := expTest
 				b.Run(fmt.Sprintf("#%d", i), func(b *testing.B) {
+					if !expTest.benchQuick && !FullBenchmarks() {
+						b.Skip("Skipping benchmark - rerun with -bench-full to enable")
+					}
+
 					expr, err := CreateEvaluator(expTest.expression, nil)
 					require.NoError(b, err)
 

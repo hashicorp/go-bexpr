@@ -5,7 +5,7 @@ BENCHTESTS ?= .
 
 BENCHFULL?=0
 ifeq (${BENCHFULL},1)
-BENCHFULL_ARG=-bench-full
+BENCHFULL_ARG=-bench-full -timeout 60m
 else
 BENCHFULL_ARG=
 endif

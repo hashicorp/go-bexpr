@@ -213,17 +213,19 @@ func TestGenerateFieldConfigurations(t *testing.T) {
 
 func BenchmarkGenerateFieldConfigurations(b *testing.B) {
 	for name, tcase := range fieldConfigTests {
-		if tcase.benchQuick || FullBenchmarks() {
-			b.Run(name, func(b *testing.B) {
-				for n := 0; n < b.N; n++ {
-					_, err := GenerateFieldConfigurations(tcase.dataType)
-					if tcase.err == "" {
-						require.NoError(b, err)
-					} else {
-						require.Error(b, err)
-					}
+		b.Run(name, func(b *testing.B) {
+			if !tcase.benchQuick && !FullBenchmarks() {
+				b.Skip("Skipping benchmark - rerun with -bench-full to enable")
+			}
+
+			for n := 0; n < b.N; n++ {
+				_, err := GenerateFieldConfigurations(tcase.dataType)
+				if tcase.err == "" {
+					require.NoError(b, err)
+				} else {
+					require.Error(b, err)
 				}
-			})
-		}
+			}
+		})
 	}
 }
