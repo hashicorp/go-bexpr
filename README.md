@@ -2,6 +2,16 @@
 
 `bexpr` is a Go (golang) library to provide generic boolean expression evaluation and filtering for Go data structures.
 
+## Limitations
+
+Currently `bexpr` does not support operating on types with cyclical structures. Attempting to generate the fields
+of these types will cause a stack overflow. There are however two means of getting around this. First if you do not
+need the nested type to be available during evaluation then you can simply add the  `bexpr:"-"` struct tag to the
+fields where that type is referenced and `bexpr` will not delve further into that type. A second solution is implement
+the `MatchExpressionEvaluator` interface and provide the necessary field configurations yourself.
+
+Eventually this lib will support handling these cycles automatically.
+
 ## Usage (Reflection)
 
 This example program is available in [examples/simple](examples/simple)
@@ -80,3 +90,22 @@ Result of expression "foo.Z == true" evaluation: true
 Failed to create evaluator for expression "bar.Hidden != yes": Selector "bar.Hidden" is not valid
 Failed to create evaluator for expression "foo.unexported == no": Selector "foo.unexported" is not valid
 ```
+
+## Testing
+
+The [Makefile](Makefile) contains 3 main targets to aid with testing:
+
+1. `make test` - runs the standard test suite
+2. `make coverage` - runs the test suite gathering coverage information
+3. `make bench` - this will run benchmarks. You can use the [`benchcmp`]() tool to compare
+   subsequent runs of the tool to compare performance. There are a few arguments you can
+   provide to the make invocation to alter the behavior a bit
+   * `BENCHFULL=1` - This will enable running all the benchmarks. Some could be fairly redundant but
+     could be useful when modifying specific sections of the code.
+   * `BENCHTIME=5s` - By default the -benchtime paramater used for the `go test` invocation is `2s`.
+     `1s` seemed like too little to get results consistent enough for comparison between two runs.
+     For the highest degree of confidence that performance has remained steady increase this value
+     even further. The time it takes to run the bench testing suite grows linearly with this value.
+   * `BENCHTEST=BenchmarkEvalute` - This is used to run a particular benchmark including all of its
+     sub-benchmarks. This is just an example and "BenchmarkEvaluate" can be replaced with any
+     benchmark functions name.

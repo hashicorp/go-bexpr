@@ -1,5 +1,15 @@
 GOTEST_PKGS=$(shell go list ./... | grep -v examples)
 
+BENCHTIME ?= 2s
+BENCHTESTS ?= .
+
+BENCHFULL?=0
+ifeq (${BENCHFULL},1)
+BENCHFULL_ARG=-bench-full
+else
+BENCHFULL_ARG=
+endif
+
 TEST_RESULTS?="/tmp/test-results"
 grammar.go: grammar.peg
 	@echo "Regenerating Parser"
@@ -14,7 +24,7 @@ test-ci: generate
 	@gotestsum --junitfile $(TEST_RESULTS)/gotestsum-report.xml -- $(GOTEST_PKGS)
 
 bench: generate
-	@go test -bench . $(GOTEST_PKGS)
+	@go test -run DONTRUNTESTS -bench $(BENCHTESTS) $(BENCHFULL_ARG) -benchtime=$(BENCHTIME) $(GOTEST_PKGS)
 
 coverage: generate
 	@go test -coverprofile /tmp/coverage.out $(GOTEST_PKGS)

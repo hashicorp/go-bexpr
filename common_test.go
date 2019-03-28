@@ -1,6 +1,7 @@
 package bexpr
 
 import (
+	"flag"
 	"fmt"
 	"strings"
 	"testing"
@@ -8,6 +9,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+var benchFull *bool = flag.Bool("bench-full", false, "Run all benchmarks rather than a subset")
+
+func FullBenchmarks() bool {
+	return benchFull != nil && *benchFull
+}
 
 type testFlatStruct struct {
 	Int        int
