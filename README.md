@@ -97,7 +97,7 @@ The [Makefile](Makefile) contains 3 main targets to aid with testing:
 
 1. `make test` - runs the standard test suite
 2. `make coverage` - runs the test suite gathering coverage information
-3. `make bench` - this will run benchmarks. You can use the [`benchcmp`]() tool to compare
+3. `make bench` - this will run benchmarks. You can use the [`benchcmp`](https://godoc.org/golang.org/x/tools/cmd/benchcmp) tool to compare
    subsequent runs of the tool to compare performance. There are a few arguments you can
    provide to the make invocation to alter the behavior a bit
    * `BENCHFULL=1` - This will enable running all the benchmarks. Some could be fairly redundant but
