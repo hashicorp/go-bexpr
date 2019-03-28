@@ -11,10 +11,10 @@ type Filter struct {
 }
 
 func getElementType(dataType interface{}) reflect.Type {
-	rtype := derefType(reflect.TypeOf(dataType))
+	rtype := reflect.TypeOf(dataType)
 	switch rtype.Kind() {
 	case reflect.Map, reflect.Slice, reflect.Array:
-		return derefType(rtype.Elem())
+		return rtype.Elem()
 	default:
 		return rtype
 	}
