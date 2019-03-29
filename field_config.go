@@ -294,7 +294,7 @@ func (config *FieldConfiguration) String() string {
 func (configs FieldConfigurations) stringInternal(builder *strings.Builder, level int, path string) {
 	for fieldName, cfg := range configs {
 		newPath := string(fieldName)
-		if path != "" {
+		if level > 0 {
 			newPath = fmt.Sprintf("%s.%s", path, fieldName)
 		}
 		cfg.stringInternal(builder, level, newPath)
