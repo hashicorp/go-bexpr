@@ -36,6 +36,40 @@ type testFlatStruct struct {
 	Hidden     bool `bexpr:"-"`
 }
 
+type CustomInt int
+type CustomInt8 int8
+type CustomInt16 int16
+type CustomInt32 int32
+type CustomInt64 int64
+type CustomUint uint
+type CustomUint8 uint8
+type CustomUint16 uint16
+type CustomUint32 uint32
+type CustomUint64 uint64
+type CustomFloat32 float32
+type CustomFloat64 float64
+type CustomBool bool
+type CustomString string
+
+type testFlatStructAlt struct {
+	Int        CustomInt
+	Int8       CustomInt8
+	Int16      CustomInt16
+	Int32      CustomInt32
+	Int64      CustomInt64
+	Uint       CustomUint
+	Uint8      CustomUint8
+	Uint16     CustomUint16
+	Uint32     CustomUint32
+	Uint64     CustomUint64
+	Float32    CustomFloat32
+	Float64    CustomFloat64
+	Bool       CustomBool
+	String     CustomString
+	unexported CustomString
+	Hidden     CustomBool `bexpr:"-"`
+}
+
 var testFlatStructKindMap map[string]reflect.Kind = map[string]reflect.Kind{
 	"Int":     reflect.Int,
 	"Int8":    reflect.Int8,
@@ -126,33 +160,33 @@ func (t *testStructInterfaceImpl) EvaluateMatch(sel Selector, op MatchOperator, 
 		result := false
 		switch sel[1] {
 		case "Int":
-			result = eqFn(storageVal.Int, value)
+			result = eqFn(value, reflect.ValueOf(storageVal.Int))
 		case "Int8":
-			result = eqFn(storageVal.Int8, value)
+			result = eqFn(value, reflect.ValueOf(storageVal.Int8))
 		case "Int16":
-			result = eqFn(storageVal.Int16, value)
+			result = eqFn(value, reflect.ValueOf(storageVal.Int16))
 		case "Int32":
-			result = eqFn(storageVal.Int32, value)
+			result = eqFn(value, reflect.ValueOf(storageVal.Int32))
 		case "Int64":
-			result = eqFn(storageVal.Int64, value)
+			result = eqFn(value, reflect.ValueOf(storageVal.Int64))
 		case "Uint":
-			result = eqFn(storageVal.Uint, value)
+			result = eqFn(value, reflect.ValueOf(storageVal.Uint))
 		case "Uint8":
-			result = eqFn(storageVal.Uint8, value)
+			result = eqFn(value, reflect.ValueOf(storageVal.Uint8))
 		case "Uint16":
-			result = eqFn(storageVal.Uint16, value)
+			result = eqFn(value, reflect.ValueOf(storageVal.Uint16))
 		case "Uint32":
-			result = eqFn(storageVal.Uint32, value)
+			result = eqFn(value, reflect.ValueOf(storageVal.Uint32))
 		case "Uint64":
-			result = eqFn(storageVal.Uint64, value)
+			result = eqFn(value, reflect.ValueOf(storageVal.Uint64))
 		case "Float32":
-			result = eqFn(storageVal.Float32, value)
+			result = eqFn(value, reflect.ValueOf(storageVal.Float32))
 		case "Float64":
-			result = eqFn(storageVal.Float64, value)
+			result = eqFn(value, reflect.ValueOf(storageVal.Float64))
 		case "Bool":
-			result = eqFn(storageVal.Bool, value)
+			result = eqFn(value, reflect.ValueOf(storageVal.Bool))
 		case "String":
-			result = eqFn(storageVal.String, value)
+			result = eqFn(value, reflect.ValueOf(storageVal.String))
 		default:
 			return false, fmt.Errorf("Invalid data type")
 		}
