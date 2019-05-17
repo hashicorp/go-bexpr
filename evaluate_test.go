@@ -96,6 +96,10 @@ var evaluateTests map[string]expressionTest = map[string]expressionTest{
 			{expression: "String == `not-it`", result: false, benchQuick: true},
 			{expression: "String != `exported`", result: false},
 			{expression: "String != `not-it`", result: true},
+			{expression: "port in String", result: true, benchQuick: true},
+			{expression: "part in String", result: false},
+			{expression: "port not in String", result: false},
+			{expression: "part not in String", result: true},
 			{expression: "unexported == `unexported`", result: false, err: "Selector \"unexported\" is not valid"},
 			{expression: "Hidden == false", result: false, err: "Selector \"Hidden\" is not valid"},
 		},
@@ -253,6 +257,7 @@ var evaluateTests map[string]expressionTest = map[string]expressionTest{
 		},
 		[]expressionCheck{
 			{expression: "Nested.Map.foo == bar", result: true, benchQuick: true},
+			{expression: "Nested.Map.foo contains ba", result: true, benchQuick: true},
 			{expression: "Nested.Map.foo == baz", result: false},
 			{expression: "Nested.Map is not empty", result: true},
 			{expression: "Nested.Map is not empty", result: true},

@@ -30,7 +30,7 @@ var fieldConfigTests map[string]fieldConfigTest = map[string]fieldConfigTest{
 			"Float32": &FieldConfiguration{StructFieldName: "Float32", CoerceFn: CoerceFloat32, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
 			"Float64": &FieldConfiguration{StructFieldName: "Float64", CoerceFn: CoerceFloat64, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
 			"Bool":    &FieldConfiguration{StructFieldName: "Bool", CoerceFn: CoerceBool, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
-			"String":  &FieldConfiguration{StructFieldName: "String", CoerceFn: CoerceString, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
+			"String":  &FieldConfiguration{StructFieldName: "String", CoerceFn: CoerceString, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual, MatchIn, MatchNotIn}},
 		},
 		benchQuick: true,
 	},
@@ -57,12 +57,12 @@ var fieldConfigTests map[string]fieldConfigTest = map[string]fieldConfigTest{
 		expected: FieldConfigurations{
 			"Nested": &FieldConfiguration{StructFieldName: "Nested", SubFields: FieldConfigurations{
 				"Map": &FieldConfiguration{StructFieldName: "Map", SupportedOperations: []MatchOperator{MatchIn, MatchNotIn, MatchIsEmpty, MatchIsNotEmpty}, SubFields: FieldConfigurations{
-					FieldNameAny: &FieldConfiguration{StructFieldName: "", SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
+					FieldNameAny: &FieldConfiguration{StructFieldName: "", SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual, MatchIn, MatchNotIn}},
 				}},
 				"MapOfStructs": &FieldConfiguration{StructFieldName: "MapOfStructs", SupportedOperations: []MatchOperator{MatchIsEmpty, MatchIsNotEmpty, MatchIn, MatchNotIn}, SubFields: FieldConfigurations{
 					FieldNameAny: &FieldConfiguration{StructFieldName: "", SubFields: FieldConfigurations{
 						"Foo": &FieldConfiguration{StructFieldName: "Foo", CoerceFn: CoerceInt, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
-						"Baz": &FieldConfiguration{StructFieldName: "Baz", SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
+						"Baz": &FieldConfiguration{StructFieldName: "Baz", SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual, MatchIn, MatchNotIn}},
 					}},
 				}},
 				"MapInfInf":   &FieldConfiguration{StructFieldName: "MapInfInf", SupportedOperations: []MatchOperator{MatchIsEmpty, MatchIsNotEmpty}},
@@ -94,7 +94,7 @@ var fieldConfigTests map[string]fieldConfigTest = map[string]fieldConfigTest{
 				"Float32": &FieldConfiguration{StructFieldName: "Float32", CoerceFn: CoerceFloat32, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
 				"Float64": &FieldConfiguration{StructFieldName: "Float64", CoerceFn: CoerceFloat64, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
 				"Bool":    &FieldConfiguration{StructFieldName: "Bool", CoerceFn: CoerceBool, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
-				"String":  &FieldConfiguration{StructFieldName: "String", CoerceFn: CoerceString, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
+				"String":  &FieldConfiguration{StructFieldName: "String", CoerceFn: CoerceString, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual, MatchIn, MatchNotIn}},
 			}},
 			"bar": &FieldConfiguration{SubFields: FieldConfigurations{
 				"Int":     &FieldConfiguration{StructFieldName: "Int", CoerceFn: CoerceInt, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
@@ -110,7 +110,7 @@ var fieldConfigTests map[string]fieldConfigTest = map[string]fieldConfigTest{
 				"Float32": &FieldConfiguration{StructFieldName: "Float32", CoerceFn: CoerceFloat32, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
 				"Float64": &FieldConfiguration{StructFieldName: "Float64", CoerceFn: CoerceFloat64, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
 				"Bool":    &FieldConfiguration{StructFieldName: "Bool", CoerceFn: CoerceBool, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
-				"String":  &FieldConfiguration{StructFieldName: "String", CoerceFn: CoerceString, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
+				"String":  &FieldConfiguration{StructFieldName: "String", CoerceFn: CoerceString, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual, MatchIn, MatchNotIn}},
 			}},
 			"baz": &FieldConfiguration{SubFields: FieldConfigurations{
 				"Int":     &FieldConfiguration{StructFieldName: "Int", CoerceFn: CoerceInt, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
@@ -126,7 +126,7 @@ var fieldConfigTests map[string]fieldConfigTest = map[string]fieldConfigTest{
 				"Float32": &FieldConfiguration{StructFieldName: "Float32", CoerceFn: CoerceFloat32, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
 				"Float64": &FieldConfiguration{StructFieldName: "Float64", CoerceFn: CoerceFloat64, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
 				"Bool":    &FieldConfiguration{StructFieldName: "Bool", CoerceFn: CoerceBool, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
-				"String":  &FieldConfiguration{StructFieldName: "String", CoerceFn: CoerceString, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
+				"String":  &FieldConfiguration{StructFieldName: "String", CoerceFn: CoerceString, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual, MatchIn, MatchNotIn}},
 			}},
 		},
 		benchQuick: true,
@@ -149,7 +149,7 @@ var fieldConfigTests map[string]fieldConfigTest = map[string]fieldConfigTest{
 					"Float32": &FieldConfiguration{StructFieldName: "Float32", CoerceFn: CoerceFloat32, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
 					"Float64": &FieldConfiguration{StructFieldName: "Float64", CoerceFn: CoerceFloat64, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
 					"Bool":    &FieldConfiguration{StructFieldName: "Bool", CoerceFn: CoerceBool, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
-					"String":  &FieldConfiguration{StructFieldName: "String", CoerceFn: CoerceString, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
+					"String":  &FieldConfiguration{StructFieldName: "String", CoerceFn: CoerceString, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual, MatchIn, MatchNotIn}},
 				}},
 				"bar": &FieldConfiguration{SubFields: FieldConfigurations{
 					"Int":     &FieldConfiguration{StructFieldName: "Int", CoerceFn: CoerceInt, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
@@ -165,7 +165,7 @@ var fieldConfigTests map[string]fieldConfigTest = map[string]fieldConfigTest{
 					"Float32": &FieldConfiguration{StructFieldName: "Float32", CoerceFn: CoerceFloat32, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
 					"Float64": &FieldConfiguration{StructFieldName: "Float64", CoerceFn: CoerceFloat64, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
 					"Bool":    &FieldConfiguration{StructFieldName: "Bool", CoerceFn: CoerceBool, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
-					"String":  &FieldConfiguration{StructFieldName: "String", CoerceFn: CoerceString, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
+					"String":  &FieldConfiguration{StructFieldName: "String", CoerceFn: CoerceString, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual, MatchIn, MatchNotIn}},
 				}},
 				"baz": &FieldConfiguration{SubFields: FieldConfigurations{
 					"Int":     &FieldConfiguration{StructFieldName: "Int", CoerceFn: CoerceInt, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
@@ -181,7 +181,7 @@ var fieldConfigTests map[string]fieldConfigTest = map[string]fieldConfigTest{
 					"Float32": &FieldConfiguration{StructFieldName: "Float32", CoerceFn: CoerceFloat32, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
 					"Float64": &FieldConfiguration{StructFieldName: "Float64", CoerceFn: CoerceFloat64, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
 					"Bool":    &FieldConfiguration{StructFieldName: "Bool", CoerceFn: CoerceBool, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
-					"String":  &FieldConfiguration{StructFieldName: "String", CoerceFn: CoerceString, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual}},
+					"String":  &FieldConfiguration{StructFieldName: "String", CoerceFn: CoerceString, SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual, MatchIn, MatchNotIn}},
 				}},
 			}},
 		},

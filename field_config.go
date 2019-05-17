@@ -71,9 +71,13 @@ func generateFieldConfigurationInternal(rtype reflect.Type) (*FieldConfiguration
 
 	// Handle primitive types
 	if coerceFn, ok := primitiveCoercionFns[rtype.Kind()]; ok {
+		ops := []MatchOperator{MatchEqual, MatchNotEqual}
+		if rtype.Kind() == reflect.String {
+			ops = append(ops, MatchIn, MatchNotIn)
+		}
 		return &FieldConfiguration{
 			CoerceFn:            coerceFn,
-			SupportedOperations: []MatchOperator{MatchEqual, MatchNotEqual},
+			SupportedOperations: ops,
 		}, nil
 	}
 
