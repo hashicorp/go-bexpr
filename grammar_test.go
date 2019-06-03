@@ -55,6 +55,16 @@ func TestExpressionParsing(t *testing.T) {
 			expected: &MatchExpression{Selector: Selector{"bar"}, Operator: MatchNotIn, Value: &MatchValue{Raw: "foo"}},
 			err:      "",
 		},
+		"Match Matches": {
+			input:    "foo matches bar",
+			expected: &MatchExpression{Selector: Selector{"foo"}, Operator: MatchMatches, Value: &MatchValue{Raw: "bar"}},
+			err:      "",
+		},
+		"Match Not Matches": {
+			input:    "foo not matches bar",
+			expected: &MatchExpression{Selector: Selector{"foo"}, Operator: MatchNotMatches, Value: &MatchValue{Raw: "bar"}},
+			err:      "",
+		},
 		"Logical Not": {
 			input: "not prod in tags",
 			expected: &UnaryExpression{
@@ -309,7 +319,7 @@ func TestExpressionParsing(t *testing.T) {
 		"Junk at the end 4": {
 			input:    "x in foo or not ",
 			expected: nil,
-			err:      "1:17 (16): no match found, expected: \"!=\", \"(\", \"-\", \"0\", \"==\", \"\\\"\", \"`\", \"contains\", \"in\", \"is\", \"not\", [ \\t\\r\\n], [1-9] or [a-zA-Z]",
+			err:      "1:17 (16): no match found, expected: \"!=\", \"(\", \"-\", \"0\", \"==\", \"\\\"\", \"`\", \"contains\", \"in\", \"is\", \"matches\", \"not\", [ \\t\\r\\n], [1-9] or [a-zA-Z]",
 		},
 		"Float Literal 1": {
 			input:    "foo == 0.2",
@@ -405,10 +415,12 @@ func BenchmarkExpressionParsing(b *testing.B) {
 		"Not In Or Equals":      "foo not in bar or bar.foo == 3",
 		"In And Not Equals":     "foo in bar and bar.foo != \"\"",
 		"Not Equals And Equals": "not (foo == 3 and bar == 4)",
+		"Matches":               "foo matches bar",
+		"Not Matches":           "foo not matches bar",
 		"Big Selectors":         "abcdefghijklmnopqrstuvwxyz.foo.bar.baz.one.two.three.four.five.six.seven.eight.nine.ten == 42",
 		"Many Ors":              "foo == 3 or bar in baz or one != two or next is empty or other is not empty or name == \"\"",
 		"Lots of Ops":           "foo == 3 and not bar in baz and not one != two or next is empty and not foo is not empty and bar not in foo",
-		"Lots of Parens ":       "(((foo == 3) and (not ((bar in baz) and (not (one != two))))) or (((next is empty) and (not (foo is not empty))) and (bar not in foo)))",
+		"Lots of Parens":        "(((foo == 3) and (not ((bar in baz) and (not (one != two))))) or (((next is empty) and (not (foo is not empty))) and (bar not in foo)))",
 	}
 	for name, bm := range benchmarks {
 		b.Run(name, func(b *testing.B) {

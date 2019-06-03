@@ -102,6 +102,10 @@ var evaluateTests map[string]expressionTest = map[string]expressionTest{
 			{expression: "part not in String", result: true},
 			{expression: "unexported == `unexported`", result: false, err: "Selector \"unexported\" is not valid"},
 			{expression: "Hidden == false", result: false, err: "Selector \"Hidden\" is not valid"},
+			{expression: "String matches 	`^ex.*`", result: true, benchQuick: true},
+			{expression: "String not matches `^anchored.*`", result: true, benchQuick: true},
+			{expression: "String matches 	`^anchored.*`", result: false},
+			{expression: "String not matches `^ex.*`", result: false},
 		},
 	},
 	"Flat Struct Alt Types": {
