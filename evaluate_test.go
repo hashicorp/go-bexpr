@@ -346,3 +346,35 @@ func BenchmarkEvaluate(b *testing.B) {
 		})
 	}
 }
+
+func BenchmarkValidate(b *testing.B) {
+	for name, tcase := range evaluateTests {
+		// capture these values in the closure
+		name := name
+		tcase := tcase
+		b.Run(name, func(b *testing.B) {
+			for i, expTest := range tcase.expressions {
+				// capture these values in the closure
+				expTest := expTest
+				b.Run(fmt.Sprintf("#%d", i), func(b *testing.B) {
+					if !expTest.benchQuick && !FullBenchmarks() {
+						b.Skip("Skipping benchmark - rerun with -bench-full to enable")
+					}
+
+					expr, err := CreateEvaluator(expTest.expression, nil)
+					require.NoError(b, err)
+
+					b.ResetTimer()
+					for n := 0; n < b.N; n++ {
+						err = expr.Validate(&expr.config, tcase.value)
+						if expTest.err != "" {
+							require.Error(b, err)
+						} else {
+							require.NoError(b, err)
+						}
+					}
+				})
+			}
+		})
+	}
+}
