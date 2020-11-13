@@ -329,17 +329,17 @@ func TestExpressionParsing(t *testing.T) {
 		"Junk at the end 2": {
 			input:    "x in foo and ",
 			expected: nil,
-			err:      "1:14 (13): no match found, expected: \"(\", \"-\", \"0\", \"\\\"\", \"`\", \"not\", [ \\t\\r\\n], [1-9] or [a-zA-Z]",
+			err:      "1:14 (13): no match found, expected: \"(\", \"-\", \"/\", \"0\", \"\\\"\", \"`\", \"not\", [ \\t\\r\\n], [1-9] or [a-zA-Z]",
 		},
 		"Junk at the end 3": {
 			input:    "x in foo or ",
 			expected: nil,
-			err:      "1:13 (12): no match found, expected: \"(\", \"-\", \"0\", \"\\\"\", \"`\", \"not\", [ \\t\\r\\n], [1-9] or [a-zA-Z]",
+			err:      "1:13 (12): no match found, expected: \"(\", \"-\", \"/\", \"0\", \"\\\"\", \"`\", \"not\", [ \\t\\r\\n], [1-9] or [a-zA-Z]",
 		},
 		"Junk at the end 4": {
 			input:    "x in foo or not ",
 			expected: nil,
-			err:      "1:17 (16): no match found, expected: \"!=\", \"(\", \"-\", \"0\", \"==\", \"\\\"\", \"`\", \"contains\", \"in\", \"is\", \"matches\", \"not\", [ \\t\\r\\n], [1-9] or [a-zA-Z]",
+			err:      "1:17 (16): no match found, expected: \"!=\", \"(\", \"-\", \"/\", \"0\", \"==\", \"\\\"\", \"`\", \"contains\", \"in\", \"is\", \"matches\", \"not\", [ \\t\\r\\n], [1-9] or [a-zA-Z]",
 		},
 		"Float Literal 1": {
 			input:    "foo == 0.2",
