@@ -100,16 +100,30 @@ type BinaryExpression struct {
 	Right    Expression
 }
 
-type Selector []string
+type SelectorType uint32
+
+const (
+	SelectorTypeUnknown = iota
+	SelectorTypeBexpr
+	SelectorTypeJsonPointer
+)
+
+type Selector struct {
+	Type SelectorType
+	Path []string
+}
 
 func (sel Selector) String() string {
-	switch {
-	case len(sel) == 0:
+	if len(sel.Path) == 0 {
 		return ""
-	case sel[0] == "/":
-		return strings.Join([]string(sel), "/")
+	}
+	switch sel.Type {
+	case SelectorTypeBexpr:
+		return strings.Join(sel.Path, ".")
+	case SelectorTypeJsonPointer:
+		return strings.Join(sel.Path, "/")
 	default:
-		return strings.Join([]string(sel), ".")
+		return ""
 	}
 }
 

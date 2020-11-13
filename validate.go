@@ -41,7 +41,7 @@ func validateRecurse(ast Expression, fields FieldConfigurations, maxRawValueLeng
 		rightMatches, err := validateRecurse(node.Right, fields, maxRawValueLength)
 		return leftMatches + rightMatches, err
 	case *MatchExpression:
-		if len(node.Selector) < 1 {
+		if len(node.Selector.Path) < 1 {
 			return 1, fmt.Errorf("Invalid selector: %q", node.Selector)
 		}
 
@@ -57,7 +57,7 @@ func validateRecurse(ast Expression, fields FieldConfigurations, maxRawValueLeng
 		configs := fields
 		var lastConfig *FieldConfiguration
 		// validate the selector
-		for idx, field := range node.Selector {
+		for idx, field := range node.Selector.Path {
 			if fcfg, ok := configs[FieldName(field)]; ok {
 				lastConfig = fcfg
 				configs = fcfg.SubFields
@@ -65,12 +65,12 @@ func validateRecurse(ast Expression, fields FieldConfigurations, maxRawValueLeng
 				lastConfig = fcfg
 				configs = fcfg.SubFields
 			} else {
-				return 1, fmt.Errorf("Selector %q is not valid", node.Selector[:idx+1])
+				return 1, fmt.Errorf("Selector %q is not valid", node.Selector.Path[:idx+1])
 			}
 
 			// this just verifies that the FieldConfigurations we are using was created properly
 			if lastConfig == nil {
-				return 1, fmt.Errorf("FieldConfiguration for selector %q is nil", node.Selector[:idx])
+				return 1, fmt.Errorf("FieldConfiguration for selector %q is nil", node.Selector.Path[:idx])
 			}
 		}
 

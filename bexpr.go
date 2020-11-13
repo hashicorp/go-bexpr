@@ -142,7 +142,7 @@ func (eval *Evaluator) validate(config *EvaluatorConfig, dataType interface{}, u
 		maxRawValueLength = defaultMaxRawValueLength
 	}
 
-	err = validate(eval.ast, fields, config.MaxMatches, config.MaxRawValueLength)
+	err = validate(eval.ast, fields, maxMatches, maxRawValueLength)
 	if err != nil {
 		return err
 	}

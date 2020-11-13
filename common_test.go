@@ -134,7 +134,8 @@ func (t *testStructInterfaceImpl) FieldConfigurations() FieldConfigurations {
 	return fields
 }
 
-func (t *testStructInterfaceImpl) EvaluateMatch(sel Selector, op MatchOperator, value interface{}) (bool, error) {
+func (t *testStructInterfaceImpl) EvaluateMatch(selector Selector, op MatchOperator, value interface{}) (bool, error) {
+	sel := selector.Path
 	switch sel[0] {
 	case "foo", "bar", "baz":
 		storageVal, ok := t.storage[sel[0]]

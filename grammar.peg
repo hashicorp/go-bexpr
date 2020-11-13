@@ -104,7 +104,10 @@ MatchNotMatches <- _ "not" _ "matches" _ {
 }
 
 Selector <- slash:"/"? first:Identifier rest:SelectorOrIndex* {
-   sel := make(Selector, 0, 2)
+    sel := Selector{
+       Type: SelectorTypeBexpr,
+       Path: []string{first.(string)},
+    }
 
    if slash != nil {
       slashBytes, ok := slash.([]byte)
@@ -117,14 +120,12 @@ Selector <- slash:"/"? first:Identifier rest:SelectorOrIndex* {
       if slashBytes[0] != '/' {
          return false, fmt.Errorf("slash expected, got %v", slashBytes)
       }
-      sel = append(sel, "/")
+      sel.Type = SelectorTypeJsonPointer
    }
-
-   sel = append(sel, first.(string))
 
    if rest != nil {
       for _, v := range rest.([]interface{}) {
-        sel = append(sel, v.(string))
+        sel.Path = append(sel.Path, v.(string))
       }
    }
    return sel, nil
