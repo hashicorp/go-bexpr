@@ -103,10 +103,24 @@ MatchNotMatches <- _ "not" _ "matches" _ {
    return MatchNotMatches, nil
 }
 
-Selector "selector" <- first:Identifier rest:SelectorOrIndex* {
-   sel := Selector{
-      first.(string),
+Selector <- slash:"/"? first:Identifier rest:SelectorOrIndex* {
+   sel := make(Selector, 0, 2)
+
+   if slash != nil {
+      slashBytes, ok := slash.([]byte)
+      if !ok {
+         return false, errors.New("unable to parse slash in selector")
+      }
+      if len(slashBytes) != 1 {
+         return false, errors.New("wrong size of slash in selector")
+      }
+      if slashBytes[0] != '/' {
+         return false, fmt.Errorf("slash expected, got %v", slashBytes)
+      }
+      sel = append(sel, "/")
    }
+
+   sel = append(sel, first.(string))
 
    if rest != nil {
       for _, v := range rest.([]interface{}) {
@@ -122,6 +136,8 @@ Identifier <- [a-zA-Z] [a-zA-Z0-9_]* {
 
 SelectorOrIndex <- "." ident:Identifier {
    return ident, nil
+} / "/" ident:Identifier {
+   return ident, nil
 } / expr:IndexExpression {
    return expr, nil
 }
@@ -134,9 +150,22 @@ IndexExpression "index" <- "[" _? lit:StringLiteral _? "]" {
    return false, errors.New("Unclosed index expression")
 }
 
-Value "value" <- selector:Selector { return &MatchValue{Raw:strings.Join(selector.(Selector), ".")}, nil }
-       / n:NumberLiteral { return &MatchValue{Raw: n.(string)}, nil }
-       / s:StringLiteral { return &MatchValue{Raw: s.(string)}, nil}
+Value "value" <- selector:Selector {
+   var raw string
+   sel := selector.(Selector)
+   switch {
+	case len(sel) == 0:
+	case sel[0] == "/":
+		raw = strings.Join(sel, "/")
+	default:
+		raw = strings.Join(sel, ".")
+   }
+   return &MatchValue{Raw:raw}, nil 
+} / n:NumberLiteral {
+   return &MatchValue{Raw: n.(string)}, nil
+} / s:StringLiteral {
+   return &MatchValue{Raw: s.(string)}, nil
+}
 
 NumberLiteral "number" <- "-"? IntegerOrFloat &AfterNumbers {
    return string(c.text), nil

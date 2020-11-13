@@ -103,7 +103,14 @@ type BinaryExpression struct {
 type Selector []string
 
 func (sel Selector) String() string {
-	return strings.Join([]string(sel), ".")
+	switch {
+	case len(sel) == 0:
+		return ""
+	case sel[0] == "/":
+		return strings.Join([]string(sel), "/")
+	default:
+		return strings.Join([]string(sel), ".")
+	}
 }
 
 type MatchExpression struct {

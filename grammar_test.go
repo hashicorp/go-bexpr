@@ -20,6 +20,11 @@ func TestExpressionParsing(t *testing.T) {
 			expected: &MatchExpression{Selector: Selector{"foo"}, Operator: MatchEqual, Value: &MatchValue{Raw: "3"}},
 			err:      "",
 		},
+		"Match Equality, JSON Pointer": {
+			input:    "/foo == 3",
+			expected: &MatchExpression{Selector: Selector{"/", "foo"}, Operator: MatchEqual, Value: &MatchValue{Raw: "3"}},
+			err:      "",
+		},
 		"Match Inequality": {
 			input:    "foo != xyz",
 			expected: &MatchExpression{Selector: Selector{"foo"}, Operator: MatchNotEqual, Value: &MatchValue{Raw: "xyz"}},
@@ -239,14 +244,29 @@ func TestExpressionParsing(t *testing.T) {
 			expected: &MatchExpression{Selector: Selector{"foo", "bar", "meta", "tags", "ENV"}, Operator: MatchIn, Value: &MatchValue{Raw: "environment"}},
 			err:      "",
 		},
+		"Selector Path, JSON Pointer": {
+			input:    "`environment` in /foo/bar/meta/tags/ENV",
+			expected: &MatchExpression{Selector: Selector{"/", "foo", "bar", "meta", "tags", "ENV"}, Operator: MatchIn, Value: &MatchValue{Raw: "environment"}},
+			err:      "",
+		},
 		"Selector All Indexes": {
 			input:    `environment in foo["bar"]["meta"]["tags"]["ENV"]`,
 			expected: &MatchExpression{Selector: Selector{"foo", "bar", "meta", "tags", "ENV"}, Operator: MatchIn, Value: &MatchValue{Raw: "environment"}},
 			err:      "",
 		},
+		"Selector All Indexes, JSON Pointer": {
+			input:    `environment in /foo/bar/meta/tags/ENV`,
+			expected: &MatchExpression{Selector: Selector{"/", "foo", "bar", "meta", "tags", "ENV"}, Operator: MatchIn, Value: &MatchValue{Raw: "environment"}},
+			err:      "",
+		},
 		"Selector All Dotted": {
 			input:    "environment in foo.bar.meta.tags.ENV",
 			expected: &MatchExpression{Selector: Selector{"foo", "bar", "meta", "tags", "ENV"}, Operator: MatchIn, Value: &MatchValue{Raw: "environment"}},
+			err:      "",
+		},
+		"Selector All Dotted, JSON Pointer": {
+			input:    "environment in /foo/bar/meta/tags/ENV",
+			expected: &MatchExpression{Selector: Selector{"/", "foo", "bar", "meta", "tags", "ENV"}, Operator: MatchIn, Value: &MatchValue{Raw: "environment"}},
 			err:      "",
 		},
 		// selectors can contain almost any character set when index expressions are used
