@@ -284,9 +284,9 @@ var evaluateTests map[string]expressionTest = map[string]expressionTest{
 	"Interface Implementor": {
 		&testStructInterfaceImpl{
 			storage: map[string]*testFlatStruct{
-				"foo": &testFlatStruct{},
-				"bar": &testFlatStruct{Int: 1, Int8: 1, Int16: 1, Int32: 1, Int64: 1, Uint: 1, Uint8: 1, Uint16: 1, Uint32: 1, Uint64: 1, Float32: 1.0, Float64: 1.0, Bool: true, String: "one"},
-				"baz": &testFlatStruct{Int: 2, Int8: 2, Int16: 2, Int32: 2, Int64: 2, Uint: 2, Uint8: 2, Uint16: 2, Uint32: 2, Uint64: 2, Float32: 2.0, Float64: 2.0, Bool: true, String: "two"},
+				"foo": {},
+				"bar": {Int: 1, Int8: 1, Int16: 1, Int32: 1, Int64: 1, Uint: 1, Uint8: 1, Uint16: 1, Uint32: 1, Uint64: 1, Float32: 1.0, Float64: 1.0, Bool: true, String: "one"},
+				"baz": {Int: 2, Int8: 2, Int16: 2, Int32: 2, Int64: 2, Uint: 2, Uint8: 2, Uint16: 2, Uint32: 2, Uint64: 2, Float32: 2.0, Float64: 2.0, Bool: true, String: "two"},
 			},
 		},
 		[]expressionCheck{

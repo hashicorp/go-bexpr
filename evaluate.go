@@ -306,7 +306,7 @@ func evaluate(ast Expression, datum interface{}, fields FieldConfigurations) (bo
 		switch node.Operator {
 		case BinaryOpAnd:
 			result, err := evaluate(node.Left, datum, fields)
-			if err != nil || result == false {
+			if err != nil || !result {
 				return result, err
 			}
 
@@ -314,7 +314,7 @@ func evaluate(ast Expression, datum interface{}, fields FieldConfigurations) (bo
 
 		case BinaryOpOr:
 			result, err := evaluate(node.Left, datum, fields)
-			if err != nil || result == true {
+			if err != nil || result {
 				return result, err
 			}
 
