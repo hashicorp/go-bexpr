@@ -105,15 +105,29 @@ MatchNotMatches <- _ "not" _ "matches" _ {
 
 Selector "selector" <- first:Identifier rest:SelectorOrIndex* {
    sel := Selector{
-      first.(string),
+      Type: SelectorTypeBexpr,
+      Path: []string{first.(string)},
    }
-
    if rest != nil {
       for _, v := range rest.([]interface{}) {
-        sel = append(sel, v.(string))
+        sel.Path = append(sel.Path, v.(string))
       }
    }
    return sel, nil
+} / '"' ptrsegs:JsonPointerSegment* '"' {
+   sel := Selector{
+      Type: SelectorTypeJsonPointer,
+   }
+   if ptrsegs != nil {
+      for _, v := range ptrsegs.([]interface{}) {
+         sel.Path = append(sel.Path, v.(string))
+      }
+   }
+   return sel, nil
+}
+
+JsonPointerSegment <- '/' ident:[\pL\pN-_.~|]+ {
+   return string(c.text)[1:], nil
 }
 
 Identifier <- [a-zA-Z] [a-zA-Z0-9_]* {
@@ -134,9 +148,13 @@ IndexExpression "index" <- "[" _? lit:StringLiteral _? "]" {
    return false, errors.New("Unclosed index expression")
 }
 
-Value "value" <- selector:Selector { return &MatchValue{Raw:strings.Join(selector.(Selector), ".")}, nil }
-       / n:NumberLiteral { return &MatchValue{Raw: n.(string)}, nil }
-       / s:StringLiteral { return &MatchValue{Raw: s.(string)}, nil}
+Value "value" <- selector:Selector {
+   return &MatchValue{Raw:selector.(Selector).String()}, nil 
+} / n:NumberLiteral {
+   return &MatchValue{Raw: n.(string)}, nil
+} / s:StringLiteral {
+   return &MatchValue{Raw: s.(string)}, nil
+}
 
 NumberLiteral "number" <- "-"? IntegerOrFloat &AfterNumbers {
    return string(c.text), nil

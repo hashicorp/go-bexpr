@@ -100,8 +100,8 @@ var evaluateTests map[string]expressionTest = map[string]expressionTest{
 			{expression: "part in String", result: false},
 			{expression: "port not in String", result: false},
 			{expression: "part not in String", result: true},
-			{expression: "unexported == `unexported`", result: false, err: "Selector \"unexported\" is not valid"},
-			{expression: "Hidden == false", result: false, err: "Selector \"Hidden\" is not valid"},
+			{expression: "unexported == `unexported`", result: false, err: "Selector [\"unexported\"] is not valid"},
+			{expression: "Hidden == false", result: false, err: "Selector [\"Hidden\"] is not valid"},
 			{expression: "String matches 	`^ex.*`", result: true, benchQuick: true},
 			{expression: "String not matches `^anchored.*`", result: true, benchQuick: true},
 			{expression: "String matches 	`^anchored.*`", result: false},
@@ -184,8 +184,8 @@ var evaluateTests map[string]expressionTest = map[string]expressionTest{
 			{expression: "String == `not-it`", result: false, benchQuick: true},
 			{expression: "String != `exported`", result: false},
 			{expression: "String != `not-it`", result: true},
-			{expression: "unexported == `unexported`", result: false, err: "Selector \"unexported\" is not valid"},
-			{expression: "Hidden == false", result: false, err: "Selector \"Hidden\" is not valid"},
+			{expression: "unexported == `unexported`", result: false, err: "Selector [\"unexported\"] is not valid"},
+			{expression: "Hidden == false", result: false, err: "Selector [\"Hidden\"] is not valid"},
 		},
 	},
 	"map[string]map[string]bool": {
@@ -215,7 +215,7 @@ var evaluateTests map[string]expressionTest = map[string]expressionTest{
 			{expression: "foo.bar != false", result: true},
 			{expression: "foo.baz != false", result: false},
 			{expression: "foo.baz != true", result: true},
-			{expression: "foo.bar.baz == 3", result: false, err: "Selector \"foo.bar.baz\" is not valid"},
+			{expression: "foo.bar.baz == 3", result: false, err: `Selector ["foo" "bar" "baz"] is not valid`},
 		},
 	},
 	"Nested Structs and Maps": {
@@ -227,12 +227,12 @@ var evaluateTests map[string]expressionTest = map[string]expressionTest{
 					"abc": "123",
 				},
 				MapOfStructs: map[string]testNestedLevel2_1{
-					"one": testNestedLevel2_1{
+					"one": {
 						Foo: 42,
 						bar: "unexported",
 						Baz: "exported",
 					},
-					"two": testNestedLevel2_1{
+					"two": {
 						Foo: 77,
 						bar: "unexported",
 						Baz: "consul",
@@ -240,19 +240,19 @@ var evaluateTests map[string]expressionTest = map[string]expressionTest{
 				},
 				SliceOfInts: []int{1, 3, 5, 7, 9},
 				SliceOfStructs: []testNestedLevel2_2{
-					testNestedLevel2_2{
+					{
 						X: 1,
 						Y: 2,
 						z: 10,
 					},
-					testNestedLevel2_2{
+					{
 						X: 3,
 						Y: 5,
 						z: 10,
 					},
 				},
 				SliceOfMapInfInf: []map[interface{}]interface{}{
-					map[interface{}]interface{}{
+					{
 						1: 2,
 					},
 				},
@@ -277,16 +277,16 @@ var evaluateTests map[string]expressionTest = map[string]expressionTest{
 			{expression: "Nested.SliceOfStructs.Y == 4", result: false},
 			{expression: "Nested.Map.notfound == 4", result: false},
 			{expression: "Map in Nested", result: false, err: "Invalid match operator \"In\" for selector \"Nested\""},
-			{expression: "Nested.MapInfInf.foo == 4", result: false, err: "Selector \"Nested.MapInfInf.foo\" is not valid"},
-			{expression: "Nested.SliceOfMapInfInf.foo == 4", result: false, err: "Selector \"Nested.SliceOfMapInfInf.foo\" is not valid"},
+			{expression: "Nested.MapInfInf.foo == 4", result: false, err: `Selector ["Nested" "MapInfInf" "foo"] is not valid`},
+			{expression: "Nested.SliceOfMapInfInf.foo == 4", result: false, err: `Selector ["Nested" "SliceOfMapInfInf" "foo"] is not valid`},
 		},
 	},
 	"Interface Implementor": {
 		&testStructInterfaceImpl{
 			storage: map[string]*testFlatStruct{
-				"foo": &testFlatStruct{},
-				"bar": &testFlatStruct{Int: 1, Int8: 1, Int16: 1, Int32: 1, Int64: 1, Uint: 1, Uint8: 1, Uint16: 1, Uint32: 1, Uint64: 1, Float32: 1.0, Float64: 1.0, Bool: true, String: "one"},
-				"baz": &testFlatStruct{Int: 2, Int8: 2, Int16: 2, Int32: 2, Int64: 2, Uint: 2, Uint8: 2, Uint16: 2, Uint32: 2, Uint64: 2, Float32: 2.0, Float64: 2.0, Bool: true, String: "two"},
+				"foo": {},
+				"bar": {Int: 1, Int8: 1, Int16: 1, Int32: 1, Int64: 1, Uint: 1, Uint8: 1, Uint16: 1, Uint32: 1, Uint64: 1, Float32: 1.0, Float64: 1.0, Bool: true, String: "one"},
+				"baz": {Int: 2, Int8: 2, Int16: 2, Int32: 2, Int64: 2, Uint: 2, Uint8: 2, Uint16: 2, Uint32: 2, Uint64: 2, Float32: 2.0, Float64: 2.0, Bool: true, String: "two"},
 			},
 		},
 		[]expressionCheck{

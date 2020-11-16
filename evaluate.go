@@ -172,7 +172,7 @@ func evaluateMatchExpressionRecurse(expression *MatchExpression, depth int, rval
 	//          So calls to the doMatch* functions don't need to do any checking to ensure that
 	//          calling various fns on them will work and not panic - because they wont.
 
-	if depth >= len(expression.Selector) {
+	if depth >= len(expression.Selector.Path) {
 		// we have reached the end of the selector - execute the match operations
 		switch expression.Operator {
 		case MatchEqual:
@@ -214,7 +214,7 @@ func evaluateMatchExpressionRecurse(expression *MatchExpression, depth int, rval
 
 	switch rvalue.Kind() {
 	case reflect.Struct:
-		fieldName := expression.Selector[depth]
+		fieldName := expression.Selector.Path[depth]
 		fieldConfig := fields[FieldName(fieldName)]
 
 		if fieldConfig.StructFieldName != "" {
@@ -224,7 +224,10 @@ func evaluateMatchExpressionRecurse(expression *MatchExpression, depth int, rval
 		value := reflect.Indirect(rvalue.FieldByName(fieldName))
 
 		if matcher, ok := value.Interface().(MatchExpressionEvaluator); ok {
-			return matcher.EvaluateMatch(expression.Selector[depth+1:], expression.Operator, getMatchExprValue(expression))
+			return matcher.EvaluateMatch(Selector{
+				Type: expression.Selector.Type,
+				Path: expression.Selector.Path[depth+1:],
+			}, expression.Operator, getMatchExprValue(expression))
 		}
 
 		return evaluateMatchExpressionRecurse(expression, depth+1, value, fieldConfig.SubFields)
@@ -252,7 +255,7 @@ func evaluateMatchExpressionRecurse(expression *MatchExpression, depth int, rval
 		// TODO (mkeeler) - Should we support implementing the MatchExpressionEvaluator interface for map types
 		//                  such as the FieldConfigurations type? Maybe later
 		//
-		value := reflect.Indirect(rvalue.MapIndex(reflect.ValueOf(expression.Selector[depth])))
+		value := reflect.Indirect(rvalue.MapIndex(reflect.ValueOf(expression.Selector.Path[depth])))
 
 		if !value.IsValid() {
 			// when the key doesn't exist in the map
@@ -269,12 +272,15 @@ func evaluateMatchExpressionRecurse(expression *MatchExpression, depth int, rval
 		}
 
 		if matcher, ok := value.Interface().(MatchExpressionEvaluator); ok {
-			return matcher.EvaluateMatch(expression.Selector[depth+1:], expression.Operator, getMatchExprValue(expression))
+			return matcher.EvaluateMatch(Selector{
+				Type: expression.Selector.Type,
+				Path: expression.Selector.Path[depth+1:],
+			}, expression.Operator, getMatchExprValue(expression))
 		}
 
 		return evaluateMatchExpressionRecurse(expression, depth+1, value, fields[FieldNameAny].SubFields)
 	default:
-		return false, fmt.Errorf("Value at selector %q with type %s does not support nested field selection", expression.Selector[:depth], rvalue.Kind())
+		return false, fmt.Errorf("Value at selector %q with type %s does not support nested field selection", expression.Selector.Path[:depth], rvalue.Kind())
 	}
 }
 
@@ -300,7 +306,7 @@ func evaluate(ast Expression, datum interface{}, fields FieldConfigurations) (bo
 		switch node.Operator {
 		case BinaryOpAnd:
 			result, err := evaluate(node.Left, datum, fields)
-			if err != nil || result == false {
+			if err != nil || !result {
 				return result, err
 			}
 
@@ -308,7 +314,7 @@ func evaluate(ast Expression, datum interface{}, fields FieldConfigurations) (bo
 
 		case BinaryOpOr:
 			result, err := evaluate(node.Left, datum, fields)
-			if err != nil || result == true {
+			if err != nil || result {
 				return result, err
 			}
 

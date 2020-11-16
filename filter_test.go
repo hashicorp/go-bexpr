@@ -12,69 +12,69 @@ type testStruct struct {
 }
 
 var testSlice []testStruct = []testStruct{
-	testStruct{
+	{
 		X: 1,
 		Y: "a",
 	},
-	testStruct{
+	{
 		X: 1,
 		Y: "b",
 	},
-	testStruct{
+	{
 		X: 2,
 		Y: "a",
 	},
-	testStruct{
+	{
 		X: 2,
 		Y: "b",
 	},
-	testStruct{
+	{
 		X: 3,
 		Y: "c",
 	},
 }
 
 var testArray [5]testStruct = [5]testStruct{
-	testStruct{
+	{
 		X: 1,
 		Y: "a",
 	},
-	testStruct{
+	{
 		X: 1,
 		Y: "b",
 	},
-	testStruct{
+	{
 		X: 2,
 		Y: "a",
 	},
-	testStruct{
+	{
 		X: 2,
 		Y: "b",
 	},
-	testStruct{
+	{
 		X: 3,
 		Y: "c",
 	},
 }
 
 var testMap map[string]testStruct = map[string]testStruct{
-	"one": testStruct{
+	"one": {
 		X: 1,
 		Y: "a",
 	},
-	"two": testStruct{
+	"two": {
 		X: 1,
 		Y: "b",
 	},
-	"three": testStruct{
+	"three": {
 		X: 2,
 		Y: "a",
 	},
-	"four": testStruct{
+	"four": {
 		X: 2,
 		Y: "b",
 	},
-	"five": testStruct{
+	"five": {
 		X: 3,
 		Y: "c",
 	},
@@ -88,49 +88,49 @@ func TestFilter(t *testing.T) {
 	}
 
 	cases := map[string]testCase{
-		"Slice X==1": testCase{
+		"Slice X==1": {
 			"X==1",
 			testSlice,
 			[]testStruct{
-				testStruct{X: 1, Y: "a"},
-				testStruct{X: 1, Y: "b"},
+				{X: 1, Y: "a"},
+				{X: 1, Y: "b"},
 			},
 		},
-		"Slice Y==`c`": testCase{
+		"Slice Y==`c`": {
 			"Y==`c`",
 			testSlice,
 			[]testStruct{
-				testStruct{X: 3, Y: "c"},
+				{X: 3, Y: "c"},
 			},
 		},
-		"Array X==1": testCase{
+		"Array X==1": {
 			"X==1",
 			testArray,
 			[]testStruct{
-				testStruct{X: 1, Y: "a"},
-				testStruct{X: 1, Y: "b"},
+				{X: 1, Y: "a"},
+				{X: 1, Y: "b"},
 			},
 		},
-		"Array Y==`c`": testCase{
+		"Array Y==`c`": {
 			"Y==`c`",
 			testArray,
 			[]testStruct{
-				testStruct{X: 3, Y: "c"},
+				{X: 3, Y: "c"},
 			},
 		},
-		"Map X==1": testCase{
+		"Map X==1": {
 			"X==1",
 			testMap,
 			map[string]testStruct{
-				"one": testStruct{X: 1, Y: "a"},
-				"two": testStruct{X: 1, Y: "b"},
+				"one": {X: 1, Y: "a"},
+				"two": {X: 1, Y: "b"},
 			},
 		},
-		"Map Y==`c`": testCase{
+		"Map Y==`c`": {
 			"Y==`c`",
 			testMap,
 			map[string]testStruct{
-				"five": testStruct{X: 3, Y: "c"},
+				"five": {X: 3, Y: "c"},
 			},
 		},
 	}
@@ -167,15 +167,15 @@ func BenchmarkFilter(b *testing.B) {
 	// The BenchmarkEvaluate function handles benchmarking most
 	// of the underlying evaluation.
 	cases := map[string]benchCase{
-		"Slice": benchCase{
+		"Slice": {
 			"X==1",
 			testSlice,
 		},
-		"Array": benchCase{
+		"Array": {
 			"X==1",
 			testArray,
 		},
-		"Map": benchCase{
+		"Map": {
 			"X==1",
 			testMap,
 		},
