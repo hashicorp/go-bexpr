@@ -21,9 +21,19 @@ func TestExpressionParsing(t *testing.T) {
 			err:      "",
 		},
 		"Match Equality, JSON Pointer": {
-			input:    "/foo == 3",
+			input:    `"/foo" == 3`,
 			expected: &MatchExpression{Selector: Selector{Type: SelectorTypeJsonPointer, Path: []string{"foo"}}, Operator: MatchEqual, Value: &MatchValue{Raw: "3"}},
 			err:      "",
+		},
+		"Match Equality, JSON Pointer, with punctuation": {
+			input:    `"/hy-phen/under_score/pi|pe/do.t/ti~lde" == 3`,
+			expected: &MatchExpression{Selector: Selector{Type: SelectorTypeJsonPointer, Path: []string{"hy-phen", "under_score", "pi|pe", "do.t", "ti~lde"}}, Operator: MatchEqual, Value: &MatchValue{Raw: "3"}},
+			err:      "",
+		},
+		"Match Equality, JSON Pointer, with punctuation, trailing slash": {
+			input:    `"/hy-phen/under_score/pi|pe/do.t/ti~lde/" == 3`,
+			expected: nil,
+			err:      "1:43 (42): no match found, expected: \"in\", \"not\" or [ \\t\\r\\n]",
 		},
 		"Match Inequality": {
 			input:    "foo != xyz",
@@ -245,8 +255,8 @@ func TestExpressionParsing(t *testing.T) {
 			err:      "",
 		},
 		"Selector Path, JSON Pointer": {
-			input:    "`environment` in /foo/bar/meta/tags/ENV",
-			expected: &MatchExpression{Selector: Selector{Type: SelectorTypeJsonPointer, Path: []string{"foo", "bar", "meta", "tags", "ENV"}}, Operator: MatchIn, Value: &MatchValue{Raw: "environment"}},
+			input:    `environment in "/hy-phen/under_score/pi|pe/do.t/ti~lde"`,
+			expected: &MatchExpression{Selector: Selector{Type: SelectorTypeJsonPointer, Path: []string{"hy-phen", "under_score", "pi|pe", "do.t", "ti~lde"}}, Operator: MatchIn, Value: &MatchValue{Raw: "environment"}},
 			err:      "",
 		},
 		"Selector All Indexes": {
@@ -254,19 +264,9 @@ func TestExpressionParsing(t *testing.T) {
 			expected: &MatchExpression{Selector: Selector{Type: SelectorTypeBexpr, Path: []string{"foo", "bar", "meta", "tags", "ENV"}}, Operator: MatchIn, Value: &MatchValue{Raw: "environment"}},
 			err:      "",
 		},
-		"Selector All Indexes, JSON Pointer": {
-			input:    `environment in /foo/bar/meta/tags/ENV`,
-			expected: &MatchExpression{Selector: Selector{Type: SelectorTypeJsonPointer, Path: []string{"foo", "bar", "meta", "tags", "ENV"}}, Operator: MatchIn, Value: &MatchValue{Raw: "environment"}},
-			err:      "",
-		},
 		"Selector All Dotted": {
 			input:    "environment in foo.bar.meta.tags.ENV",
 			expected: &MatchExpression{Selector: Selector{Type: SelectorTypeBexpr, Path: []string{"foo", "bar", "meta", "tags", "ENV"}}, Operator: MatchIn, Value: &MatchValue{Raw: "environment"}},
-			err:      "",
-		},
-		"Selector All Dotted, JSON Pointer": {
-			input:    "environment in /foo/bar/meta/tags/ENV",
-			expected: &MatchExpression{Selector: Selector{Type: SelectorTypeJsonPointer, Path: []string{"foo", "bar", "meta", "tags", "ENV"}}, Operator: MatchIn, Value: &MatchValue{Raw: "environment"}},
 			err:      "",
 		},
 		// selectors can contain almost any character set when index expressions are used
@@ -329,17 +329,17 @@ func TestExpressionParsing(t *testing.T) {
 		"Junk at the end 2": {
 			input:    "x in foo and ",
 			expected: nil,
-			err:      "1:14 (13): no match found, expected: \"(\", \"-\", \"/\", \"0\", \"\\\"\", \"`\", \"not\", [ \\t\\r\\n], [1-9] or [a-zA-Z]",
+			err:      "1:14 (13): no match found, expected: \"(\", \"-\", \"0\", \"\\\"\", \"`\", \"not\", [ \\t\\r\\n], [1-9] or [a-zA-Z]",
 		},
 		"Junk at the end 3": {
 			input:    "x in foo or ",
 			expected: nil,
-			err:      "1:13 (12): no match found, expected: \"(\", \"-\", \"/\", \"0\", \"\\\"\", \"`\", \"not\", [ \\t\\r\\n], [1-9] or [a-zA-Z]",
+			err:      "1:13 (12): no match found, expected: \"(\", \"-\", \"0\", \"\\\"\", \"`\", \"not\", [ \\t\\r\\n], [1-9] or [a-zA-Z]",
 		},
 		"Junk at the end 4": {
 			input:    "x in foo or not ",
 			expected: nil,
-			err:      "1:17 (16): no match found, expected: \"!=\", \"(\", \"-\", \"/\", \"0\", \"==\", \"\\\"\", \"`\", \"contains\", \"in\", \"is\", \"matches\", \"not\", [ \\t\\r\\n], [1-9] or [a-zA-Z]",
+			err:      "1:17 (16): no match found, expected: \"!=\", \"(\", \"-\", \"0\", \"==\", \"\\\"\", \"`\", \"contains\", \"in\", \"is\", \"matches\", \"not\", [ \\t\\r\\n], [1-9] or [a-zA-Z]",
 		},
 		"Float Literal 1": {
 			input:    "foo == 0.2",

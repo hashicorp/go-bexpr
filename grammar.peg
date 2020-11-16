@@ -103,32 +103,31 @@ MatchNotMatches <- _ "not" _ "matches" _ {
    return MatchNotMatches, nil
 }
 
-Selector <- slash:"/"? first:Identifier rest:SelectorOrIndex* {
-    sel := Selector{
-       Type: SelectorTypeBexpr,
-       Path: []string{first.(string)},
-    }
-
-   if slash != nil {
-      slashBytes, ok := slash.([]byte)
-      if !ok {
-         return false, errors.New("unable to parse slash in selector")
-      }
-      if len(slashBytes) != 1 {
-         return false, errors.New("wrong size of slash in selector")
-      }
-      if slashBytes[0] != '/' {
-         return false, fmt.Errorf("slash expected, got %v", slashBytes)
-      }
-      sel.Type = SelectorTypeJsonPointer
+Selector "selector" <- first:Identifier rest:SelectorOrIndex* {
+   sel := Selector{
+      Type: SelectorTypeBexpr,
+      Path: []string{first.(string)},
    }
-
    if rest != nil {
       for _, v := range rest.([]interface{}) {
         sel.Path = append(sel.Path, v.(string))
       }
    }
    return sel, nil
+} / '"' ptrsegs:JsonPointerSegment* '"' {
+   sel := Selector{
+      Type: SelectorTypeJsonPointer,
+   }
+   if ptrsegs != nil {
+      for _, v := range ptrsegs.([]interface{}) {
+         sel.Path = append(sel.Path, v.(string))
+      }
+   }
+   return sel, nil
+}
+
+JsonPointerSegment <- '/' ident:[\pL\pN-_.~|]+ {
+   return string(c.text)[1:], nil
 }
 
 Identifier <- [a-zA-Z] [a-zA-Z0-9_]* {
@@ -136,8 +135,6 @@ Identifier <- [a-zA-Z] [a-zA-Z0-9_]* {
 }
 
 SelectorOrIndex <- "." ident:Identifier {
-   return ident, nil
-} / "/" ident:Identifier {
    return ident, nil
 } / expr:IndexExpression {
    return expr, nil
