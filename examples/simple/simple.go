@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/hashicorp/go-bexpr"
 )
 
@@ -42,7 +43,7 @@ func main() {
 	}
 
 	for _, expression := range expressions {
-		eval, err := bexpr.CreateEvaluatorForType(expression, nil, (*map[string]Example)(nil))
+		eval, err := bexpr.CreateEvaluator(expression, nil)
 
 		if err != nil {
 			fmt.Printf("Failed to create evaluator for expression %q: %v\n", expression, err)

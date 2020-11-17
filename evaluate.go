@@ -1,10 +1,15 @@
 package bexpr
 
 import (
+	"encoding/json"
 	"fmt"
+	"log"
 	"reflect"
 	"regexp"
+	"strconv"
 	"strings"
+
+	"github.com/mitchellh/pointerstructure"
 )
 
 var byteSliceTyp reflect.Type = reflect.TypeOf([]byte{})
@@ -103,13 +108,21 @@ func doMatchMatches(expression *MatchExpression, value reflect.Value) (bool, err
 func doMatchEqual(expression *MatchExpression, value reflect.Value) (bool, error) {
 	// NOTE: see preconditions in evaluateMatchExpressionRecurse
 	eqFn := primitiveEqualityFns[value.Kind()]
-	matchValue := getMatchExprValue(expression)
+	matchValue, err := getMatchExprValue(expression, value)
+	if err != nil {
+		return false, fmt.Errorf("error getting match value in expression: %w", err)
+	}
+	log.Println(fmt.Sprintf("matchValue type %T, value %v", matchValue, matchValue))
+	log.Println(fmt.Sprintf("value kind %s", value.Kind()))
 	return eqFn(matchValue, value), nil
 }
 
 func doMatchIn(expression *MatchExpression, value reflect.Value) (bool, error) {
 	// NOTE: see preconditions in evaluateMatchExpressionRecurse
-	matchValue := getMatchExprValue(expression)
+	matchValue, err := getMatchExprValue(expression, value)
+	if err != nil {
+		return false, fmt.Errorf("error getting match value in expression: %w", err)
+	}
 
 	switch kind := value.Kind(); kind {
 	case reflect.Map:
@@ -142,168 +155,141 @@ func doMatchIsEmpty(matcher *MatchExpression, value reflect.Value) (bool, error)
 	return value.Len() == 0, nil
 }
 
-func getMatchExprValue(expression *MatchExpression) interface{} {
+func getMatchExprValue(expression *MatchExpression, rvalue reflect.Value) (interface{}, error) {
 	// NOTE: see preconditions in evaluateMatchExpressionRecurse
 	if expression.Value == nil {
-		return nil
-	}
-
-	if expression.Value.Converted != nil {
-		return expression.Value.Converted
-	}
-
-	return expression.Value.Raw
-}
-
-func evaluateMatchExpressionRecurse(expression *MatchExpression, depth int, rvalue reflect.Value, fields FieldConfigurations) (bool, error) {
-	// NOTE: Some information about preconditions is probably good to have here. Parsing
-	//       as well as the extra validation pass that MUST occur before executing the
-	//       expression evaluation allow us to make some assumptions here.
-	//
-	//       1. Selectors MUST be valid. Therefore we don't need to test if they should
-	//          be valid. This means that we can index in the FieldConfigurations map
-	//          and a configuration MUST be present.
-	//       2. If expression.Value could be converted it will already have been. No need to try
-	//          and convert again. There is also no need to check that the types match as they MUST
-	//          in order to have passed validation.
-	//       3. If we are presented with a map and we have more selectors to go through then its key
-	//          type MUST be a string
-	//       4. We already have validated that the operations can be performed on the target data.
-	//          So calls to the doMatch* functions don't need to do any checking to ensure that
-	//          calling various fns on them will work and not panic - because they wont.
-
-	if depth >= len(expression.Selector.Path) {
-		// we have reached the end of the selector - execute the match operations
-		switch expression.Operator {
-		case MatchEqual:
-			return doMatchEqual(expression, rvalue)
-		case MatchNotEqual:
-			result, err := doMatchEqual(expression, rvalue)
-			if err == nil {
-				return !result, nil
-			}
-			return false, err
-		case MatchIn:
-			return doMatchIn(expression, rvalue)
-		case MatchNotIn:
-			result, err := doMatchIn(expression, rvalue)
-			if err == nil {
-				return !result, nil
-			}
-			return false, err
-		case MatchIsEmpty:
-			return doMatchIsEmpty(expression, rvalue)
-		case MatchIsNotEmpty:
-			result, err := doMatchIsEmpty(expression, rvalue)
-			if err == nil {
-				return !result, nil
-			}
-			return false, err
-		case MatchMatches:
-			return doMatchMatches(expression, rvalue)
-		case MatchNotMatches:
-			result, err := doMatchMatches(expression, rvalue)
-			if err == nil {
-				return !result, nil
-			}
-			return false, err
-		default:
-			return false, fmt.Errorf("Invalid match operation: %d", expression.Operator)
-		}
+		return nil, nil
 	}
 
 	switch rvalue.Kind() {
-	case reflect.Struct:
-		fieldName := expression.Selector.Path[depth]
-		fieldConfig := fields[FieldName(fieldName)]
-
-		if fieldConfig.StructFieldName != "" {
-			fieldName = fieldConfig.StructFieldName
+	case reflect.Bool:
+		b, err := strconv.ParseBool(expression.Value.Raw)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing value as bool: %w", err)
 		}
-
-		value := reflect.Indirect(rvalue.FieldByName(fieldName))
-
-		return evaluateMatchExpressionRecurse(expression, depth+1, value, fieldConfig.SubFields)
-
-	case reflect.Slice, reflect.Array:
-		// TODO (mkeeler) - Should we support implementing the MatchExpressionEvaluator interface for slice/array types?
-		//                  Punting on that for now.
-		for i := 0; i < rvalue.Len(); i++ {
-			item := reflect.Indirect(rvalue.Index(i))
-			// we use the same depth because right now we are not allowing
-			// selection of individual slice/array elements
-			result, err := evaluateMatchExpressionRecurse(expression, depth, item, fields)
-			if err != nil {
-				return false, err
-			}
-
-			// operations on slices are implicity ANY operations currently so the first truthy evaluation we find we can stop
-			if result {
-				return true, nil
-			}
+		return b, nil
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		f, err := strconv.ParseInt(expression.Value.Raw, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing value as int: %w", err)
 		}
-
-		return false, nil
-	case reflect.Map:
-		// TODO (mkeeler) - Should we support implementing the MatchExpressionEvaluator interface for map types
-		//                  such as the FieldConfigurations type? Maybe later
-		//
-		value := reflect.Indirect(rvalue.MapIndex(reflect.ValueOf(expression.Selector.Path[depth])))
-
-		if !value.IsValid() {
-			// when the key doesn't exist in the map
-			switch expression.Operator {
-			case MatchEqual, MatchIsNotEmpty, MatchIn:
-				return false, nil
-			default:
-				// MatchNotEqual, MatchIsEmpty, MatchNotIn
-				// Whatever you were looking for cannot be equal because it doesn't exist
-				// Similarly it cannot be in some other container and every other container
-				// is always empty.
-				return true, nil
-			}
+		return f, nil
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		f, err := strconv.ParseUint(expression.Value.Raw, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing value as uint: %w", err)
 		}
+		return f, nil
+	case reflect.Float32, reflect.Float64:
+		f, err := strconv.ParseFloat(expression.Value.Raw, 64)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing value as float: %w", err)
+		}
+		return f, nil
+	case reflect.String:
+		return expression.Value.Raw, nil
+	}
+	return expression.Value.Raw, nil
+}
 
-		return evaluateMatchExpressionRecurse(expression, depth+1, value, fields[FieldNameAny].SubFields)
+func evaluateMatchExpression(expression *MatchExpression, datum interface{}) (bool, error) {
+	ptr := fmt.Sprintf("/%s", strings.Join(expression.Selector.Path, "/"))
+	log.Println(ptr)
+	val, err := pointerstructure.Get(datum, ptr)
+	if err != nil {
+		return false, fmt.Errorf("error finding value in datum: %w", err)
+	}
+
+	if jn, ok := val.(json.Number); ok {
+		if jni, err := jn.Int64(); err == nil {
+			val = jni
+		} else if jnf, err := jn.Float64(); err == nil {
+			val = jnf
+		} else {
+			return false, fmt.Errorf("unable to convert json number %s to int or float", jn)
+		}
+	}
+
+	pvalue := reflect.Indirect(reflect.ValueOf(val))
+	switch pvalue.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		val = pvalue.Int()
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		val = pvalue.Uint()
+	case reflect.Float32, reflect.Float64:
+		val = pvalue.Float()
+	}
+
+	log.Println(fmt.Sprintf("before rvalue %T, %v", val, val))
+
+	rvalue := reflect.Indirect(reflect.ValueOf(val))
+	log.Println(fmt.Sprintf("rvalue %s, %v", rvalue.Kind(), rvalue))
+	switch expression.Operator {
+	case MatchEqual:
+		return doMatchEqual(expression, rvalue)
+	case MatchNotEqual:
+		result, err := doMatchEqual(expression, rvalue)
+		if err == nil {
+			return !result, nil
+		}
+		return false, err
+	case MatchIn:
+		return doMatchIn(expression, rvalue)
+	case MatchNotIn:
+		result, err := doMatchIn(expression, rvalue)
+		if err == nil {
+			return !result, nil
+		}
+		return false, err
+	case MatchIsEmpty:
+		return doMatchIsEmpty(expression, rvalue)
+	case MatchIsNotEmpty:
+		result, err := doMatchIsEmpty(expression, rvalue)
+		if err == nil {
+			return !result, nil
+		}
+		return false, err
+	case MatchMatches:
+		return doMatchMatches(expression, rvalue)
+	case MatchNotMatches:
+		result, err := doMatchMatches(expression, rvalue)
+		if err == nil {
+			return !result, nil
+		}
+		return false, err
 	default:
-		return false, fmt.Errorf("Value at selector %q with type %s does not support nested field selection", expression.Selector.Path[:depth], rvalue.Kind())
+		return false, fmt.Errorf("Invalid match operation: %d", expression.Operator)
 	}
 }
 
-func evaluateMatchExpression(expression *MatchExpression, datum interface{}, fields FieldConfigurations) (bool, error) {
-	rvalue := reflect.Indirect(reflect.ValueOf(datum))
-
-	return evaluateMatchExpressionRecurse(expression, 0, rvalue, fields)
-}
-
-func evaluate(ast Expression, datum interface{}, fields FieldConfigurations) (bool, error) {
+func evaluate(ast Expression, datum interface{}) (bool, error) {
 	switch node := ast.(type) {
 	case *UnaryExpression:
 		switch node.Operator {
 		case UnaryOpNot:
-			result, err := evaluate(node.Operand, datum, fields)
+			result, err := evaluate(node.Operand, datum)
 			return !result, err
 		}
 	case *BinaryExpression:
 		switch node.Operator {
 		case BinaryOpAnd:
-			result, err := evaluate(node.Left, datum, fields)
+			result, err := evaluate(node.Left, datum)
 			if err != nil || !result {
 				return result, err
 			}
 
-			return evaluate(node.Right, datum, fields)
+			return evaluate(node.Right, datum)
 
 		case BinaryOpOr:
-			result, err := evaluate(node.Left, datum, fields)
+			result, err := evaluate(node.Left, datum)
 			if err != nil || result {
 				return result, err
 			}
 
-			return evaluate(node.Right, datum, fields)
+			return evaluate(node.Right, datum)
 		}
 	case *MatchExpression:
-		return evaluateMatchExpression(node, datum, fields)
+		return evaluateMatchExpression(node, datum)
 	}
 	return false, fmt.Errorf("Invalid AST node")
 }

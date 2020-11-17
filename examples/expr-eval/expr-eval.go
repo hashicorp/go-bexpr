@@ -99,7 +99,7 @@ var expressions []string = []string{
 
 func main() {
 	for _, expression := range expressions {
-		eval, err := bexpr.CreateEvaluatorForType(expression, nil, (*Matchable)(nil))
+		eval, err := bexpr.CreateEvaluator(expression, nil)
 
 		if err != nil {
 			fmt.Printf("Failed to create evaluator for expression %q: %v\n", expression, err)

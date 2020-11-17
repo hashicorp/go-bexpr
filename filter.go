@@ -28,12 +28,12 @@ func getElementType(dataType interface{}) reflect.Type {
 // For example, if you want to filter a []Foo then the data type to pass here is either []Foo or just Foo.
 // If no expression is provided the nil filter will be returned but is not an error. This is done
 // to allow for executing the nil filter which is just a no-op
-func CreateFilter(expression string, config *EvaluatorConfig, dataType interface{}) (*Filter, error) {
+func CreateFilter(expression string, config *EvaluatorConfig) (*Filter, error) {
 	if expression == "" {
 		// nil filter
 		return nil, nil
 	}
-	exp, err := CreateEvaluatorForType(expression, config, getElementType(dataType))
+	exp, err := CreateEvaluator(expression, config)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create boolean expression evaluator: %v", err)
 	}

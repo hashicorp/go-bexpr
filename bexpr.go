@@ -5,7 +5,6 @@
 package bexpr
 
 import (
-	"fmt"
 	"reflect"
 )
 
@@ -41,101 +40,23 @@ type EvaluatorConfig struct {
 }
 
 func CreateEvaluator(expression string, config *EvaluatorConfig) (*Evaluator, error) {
-	return CreateEvaluatorForType(expression, config, nil)
-}
-
-func CreateEvaluatorForType(expression string, config *EvaluatorConfig, dataType interface{}) (*Evaluator, error) {
 	ast, err := Parse("", []byte(expression))
-
 	if err != nil {
 		return nil, err
 	}
-
-	eval := &Evaluator{ast: ast.(Expression)}
 
 	if config == nil {
-		config = &eval.config
+		config = &EvaluatorConfig{}
 	}
-	err = eval.validate(config, dataType, true)
-	if err != nil {
-		return nil, err
+
+	eval := &Evaluator{
+		ast:    ast.(Expression),
+		config: *config,
 	}
 
 	return eval, nil
 }
 
 func (eval *Evaluator) Evaluate(datum interface{}) (bool, error) {
-	if eval.fields == nil {
-		err := eval.validate(&eval.config, datum, true)
-		if err != nil {
-			return false, err
-		}
-	} else if reflect.TypeOf(datum) != eval.boundType {
-		return false, fmt.Errorf("This evaluator can only be used to evaluate matches against %s", eval.boundType)
-	}
-
-	return evaluate(eval.ast, datum, eval.fields)
-}
-
-func (eval *Evaluator) validate(config *EvaluatorConfig, dataType interface{}, updateEvaluator bool) error {
-	if config == nil {
-		return fmt.Errorf("Invalid config")
-	}
-
-	var fields FieldConfigurations
-	var err error
-	var rtype reflect.Type
-	if dataType != nil {
-		registry := DefaultRegistry
-
-		switch t := dataType.(type) {
-		case reflect.Type:
-			rtype = t
-		case *reflect.Type:
-			rtype = *t
-		case reflect.Value:
-			rtype = t.Type()
-		case *reflect.Value:
-			rtype = t.Type()
-		default:
-			rtype = reflect.TypeOf(dataType)
-		}
-
-		fields, err = registry.GetFieldConfigurations(rtype)
-		if err != nil {
-			return err
-		}
-
-		if len(fields) < 1 {
-			return fmt.Errorf("Data type %s has no evaluatable fields", rtype.String())
-		}
-	}
-
-	maxMatches := config.MaxMatches
-	if maxMatches == 0 {
-		maxMatches = defaultMaxMatches
-	}
-
-	maxRawValueLength := config.MaxRawValueLength
-	if maxRawValueLength == 0 {
-		maxRawValueLength = defaultMaxRawValueLength
-	}
-
-	err = validate(eval.ast, fields, maxMatches, maxRawValueLength)
-	if err != nil {
-		return err
-	}
-
-	if updateEvaluator {
-		eval.config = *config
-		eval.fields = fields
-		eval.boundType = rtype
-	}
-
-	return nil
-}
-
-// Validates an existing expression against a possibly different configuration
-func (eval *Evaluator) Validate(config *EvaluatorConfig, dataType interface{}) error {
-	return eval.validate(config, dataType, false)
+	return evaluate(eval.ast, datum)
 }

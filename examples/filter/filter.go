@@ -28,7 +28,7 @@ func main() {
 		"five":  Filterable{X: 5, Y: 6},
 	}
 
-	filter, err := bexpr.CreateFilter("X == 2 or Y == 2", nil, (*Filterable)(nil))
+	filter, err := bexpr.CreateFilter("X == 2 or Y == 2", nil)
 	if err != nil {
 		fmt.Printf("Failed to create filter: %v\n", err)
 		return
