@@ -14,20 +14,6 @@ const (
 	defaultMaxRawValueLength = 512
 )
 
-// MatchExpressionEvaluator is the interface to implement to provide custom evaluation
-// logic for a selector. This could be used to enable synthetic fields or other
-// more complex logic that the default behavior does not support
-type MatchExpressionEvaluator interface {
-	// FieldConfigurations returns the configuration for this field and any subfields
-	// it may have. It must be valid to call this method on nil.
-	FieldConfigurations() FieldConfigurations
-
-	// EvaluateMatch returns whether there was a match or not. We are not also
-	// expecting any errors because all the validation bits are handled
-	// during parsing and cross checking against the output of FieldConfigurations.
-	EvaluateMatch(sel Selector, op MatchOperator, value interface{}) (bool, error)
-}
-
 type Evaluator struct {
 	// The syntax tree
 	ast Expression
@@ -52,10 +38,6 @@ type EvaluatorConfig struct {
 	MaxMatches int
 	// Maximum length of raw values. 0 means unlimited
 	MaxRawValueLength int
-	// The Registry to use for validating expressions for a data type
-	// If nil the `DefaultRegistry` will be used. To disable using a
-	// registry all together you can set this to `NilRegistry`
-	Registry Registry
 }
 
 func CreateEvaluator(expression string, config *EvaluatorConfig) (*Evaluator, error) {
@@ -105,9 +87,6 @@ func (eval *Evaluator) validate(config *EvaluatorConfig, dataType interface{}, u
 	var rtype reflect.Type
 	if dataType != nil {
 		registry := DefaultRegistry
-		if config.Registry != nil {
-			registry = config.Registry
-		}
 
 		switch t := dataType.(type) {
 		case reflect.Type:

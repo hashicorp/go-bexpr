@@ -61,17 +61,6 @@ type FieldConfiguration struct {
 type FieldConfigurations map[FieldName]*FieldConfiguration
 
 func generateFieldConfigurationInterface(rtype reflect.Type) (FieldConfigurations, bool) {
-	// Handle those types that implement our interface
-	if rtype.Implements(reflect.TypeOf((*MatchExpressionEvaluator)(nil)).Elem()) {
-		// TODO (mkeeler) Do we need to new a value just to call the function? Potentially we can
-		// lookup the func and invoke it with a nil pointer?
-		value := reflect.New(rtype)
-		// have to take the Elem() of the new value because New gives us a ptr to the type that
-		// we checked if it implements the interface
-		configs := value.Elem().Interface().(MatchExpressionEvaluator).FieldConfigurations()
-		return configs, true
-	}
-
 	return nil, false
 }
 

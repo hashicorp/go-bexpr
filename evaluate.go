@@ -223,13 +223,6 @@ func evaluateMatchExpressionRecurse(expression *MatchExpression, depth int, rval
 
 		value := reflect.Indirect(rvalue.FieldByName(fieldName))
 
-		if matcher, ok := value.Interface().(MatchExpressionEvaluator); ok {
-			return matcher.EvaluateMatch(Selector{
-				Type: expression.Selector.Type,
-				Path: expression.Selector.Path[depth+1:],
-			}, expression.Operator, getMatchExprValue(expression))
-		}
-
 		return evaluateMatchExpressionRecurse(expression, depth+1, value, fieldConfig.SubFields)
 
 	case reflect.Slice, reflect.Array:
@@ -271,13 +264,6 @@ func evaluateMatchExpressionRecurse(expression *MatchExpression, depth int, rval
 			}
 		}
 
-		if matcher, ok := value.Interface().(MatchExpressionEvaluator); ok {
-			return matcher.EvaluateMatch(Selector{
-				Type: expression.Selector.Type,
-				Path: expression.Selector.Path[depth+1:],
-			}, expression.Operator, getMatchExprValue(expression))
-		}
-
 		return evaluateMatchExpressionRecurse(expression, depth+1, value, fields[FieldNameAny].SubFields)
 	default:
 		return false, fmt.Errorf("Value at selector %q with type %s does not support nested field selection", expression.Selector.Path[:depth], rvalue.Kind())
@@ -285,10 +271,6 @@ func evaluateMatchExpressionRecurse(expression *MatchExpression, depth int, rval
 }
 
 func evaluateMatchExpression(expression *MatchExpression, datum interface{}, fields FieldConfigurations) (bool, error) {
-	if matcher, ok := datum.(MatchExpressionEvaluator); ok {
-		return matcher.EvaluateMatch(expression.Selector, expression.Operator, getMatchExprValue(expression))
-	}
-
 	rvalue := reflect.Indirect(reflect.ValueOf(datum))
 
 	return evaluateMatchExpressionRecurse(expression, 0, rvalue, fields)
