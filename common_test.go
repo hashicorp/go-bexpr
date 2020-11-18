@@ -4,11 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"reflect"
-	"strings"
-	"testing"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 var benchFull *bool = flag.Bool("bench-full", false, "Run all benchmarks rather than a subset")
@@ -115,23 +110,6 @@ type testStructInterfaceImpl struct {
 	storage map[string]*testFlatStruct
 }
 
-func (t *testStructInterfaceImpl) FieldConfigurations() FieldConfigurations {
-	// only going to allow foo, bar and baz for selectors
-
-	subfields, _ := GenerateFieldConfigurations((*testFlatStruct)(nil))
-
-	fields := make(FieldConfigurations)
-
-	subfield := &FieldConfiguration{
-		SubFields: subfields,
-	}
-	fields[FieldName("foo")] = subfield
-	fields[FieldName("bar")] = subfield
-	fields[FieldName("baz")] = subfield
-
-	return fields
-}
-
 func (t *testStructInterfaceImpl) EvaluateMatch(selector Selector, op MatchOperator, value interface{}) (bool, error) {
 	sel := selector.Path
 	switch sel[0] {
@@ -197,53 +175,4 @@ func (t *testStructInterfaceImpl) EvaluateMatch(selector Selector, op MatchOpera
 	default:
 		return false, fmt.Errorf("Invalid selector")
 	}
-}
-
-func validateFieldConfigurationsRecurse(t *testing.T, expected, actual FieldConfigurations, path string) bool {
-	t.Helper()
-
-	ok := assert.Len(t, actual, len(expected), "Actual FieldConfigurations length of %d != expected length of %d for path %q", len(actual), len(expected), path)
-
-	for fieldName, expectedConfig := range expected {
-		actualConfig, ok := actual[fieldName]
-		ok = ok && assert.True(t, ok, "Actual configuration is missing field %q", fieldName)
-		ok = ok && assert.Equal(t, expectedConfig.StructFieldName, actualConfig.StructFieldName, "Field %q on path %q have different StructFieldNames - Expected: %q, Actual: %q", fieldName, path, expectedConfig.StructFieldName, actualConfig.StructFieldName)
-		ok = ok && assert.ElementsMatch(t, expectedConfig.SupportedOperations, actualConfig.SupportedOperations, "Fields %q on path %q have different SupportedOperations - Expected: %v, Actual: %v", fieldName, path, expectedConfig.SupportedOperations, actualConfig.SupportedOperations)
-
-		newPath := string(fieldName)
-		if newPath == "" {
-			newPath = "*"
-		}
-		if path != "" {
-			newPath = fmt.Sprintf("%s.%s", path, newPath)
-		}
-		ok = ok && validateFieldConfigurationsRecurse(t, expectedConfig.SubFields, actualConfig.SubFields, newPath)
-
-		if !ok {
-			break
-		}
-	}
-
-	return ok
-}
-
-func validateFieldConfigurations(t *testing.T, expected, actual FieldConfigurations) {
-	t.Helper()
-	require.True(t, validateFieldConfigurationsRecurse(t, expected, actual, ""))
-}
-
-func dumpFieldConfigurationsRecurse(fields FieldConfigurations, level int, path string) {
-	for fieldName, cfg := range fields {
-		fmt.Printf("%sPath: %s Field: %s, StructFieldName: %s, CoerceFn: %p, SupportedOperations: %v\n", strings.Repeat("   ", level), path, fieldName, cfg.StructFieldName, cfg.CoerceFn, cfg.SupportedOperations)
-		newPath := string(fieldName)
-		if path != "" {
-			newPath = fmt.Sprintf("%s.%s", path, fieldName)
-		}
-		dumpFieldConfigurationsRecurse(cfg.SubFields, level+1, newPath)
-	}
-}
-
-func dumpFieldConfigurations(name string, fields FieldConfigurations) {
-	fmt.Printf("===== %s =====\n", name)
-	dumpFieldConfigurationsRecurse(fields, 1, "")
 }

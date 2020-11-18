@@ -4,10 +4,6 @@
 // was matched by the expression
 package bexpr
 
-import (
-	"reflect"
-)
-
 const (
 	defaultMaxMatches        = 32
 	defaultMaxRawValueLength = 512
@@ -19,14 +15,6 @@ type Evaluator struct {
 
 	// A few configurations for extra validation of the AST
 	config EvaluatorConfig
-
-	// Once an expression has been run against a particular data type it cannot be executed
-	// against a different data type. Some coerced value memoization occurs which would
-	// be invalid against other data types.
-	boundType reflect.Type
-
-	// The field configuration of the boundType
-	fields FieldConfigurations
 }
 
 // Extra configuration used to perform further validation on a parsed

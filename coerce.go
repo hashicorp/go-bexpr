@@ -117,6 +117,8 @@ func CoerceString(value string) (interface{}, error) {
 	return value, nil
 }
 
+type FieldValueCoercionFn func(string) (interface{}, error)
+
 var primitiveCoercionFns = map[reflect.Kind]FieldValueCoercionFn{
 	reflect.Bool:    CoerceBool,
 	reflect.Int:     CoerceInt,
