@@ -4,11 +4,6 @@
 // was matched by the expression
 package bexpr
 
-const (
-	defaultMaxMatches        = 32
-	defaultMaxRawValueLength = 512
-)
-
 type Evaluator struct {
 	// The syntax tree
 	ast Expression
@@ -18,13 +13,12 @@ type Evaluator struct {
 }
 
 // Extra configuration used to perform further validation on a parsed
-// expression and to aid in the evaluation process
+// expression. Currently this does not hold any fields, but it avoids changing
+// the function signature.
+//
+// TODO: Remove this? Perhaps in favor of an Options approach for the calls that
+// need it?
 type EvaluatorConfig struct {
-	// Maximum number of matching expressions allowed. 0 means unlimited
-	// This does not include and, or and not expressions within the AST
-	MaxMatches int
-	// Maximum length of raw values. 0 means unlimited
-	MaxRawValueLength int
 }
 
 func CreateEvaluator(expression string, config *EvaluatorConfig) (*Evaluator, error) {

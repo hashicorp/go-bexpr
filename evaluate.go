@@ -6,7 +6,6 @@ import (
 	"log"
 	"reflect"
 	"regexp"
-	"strconv"
 	"strings"
 
 	"github.com/mitchellh/pointerstructure"
@@ -168,46 +167,29 @@ func doMatchIsEmpty(matcher *MatchExpression, value reflect.Value) (bool, error)
 }
 
 func getMatchExprValue(expression *MatchExpression, rvalue reflect.Value) (interface{}, error) {
-	// NOTE: see preconditions in evaluateMatchExpressionRecurse
 	if expression.Value == nil {
 		return nil, nil
 	}
 
 	switch rvalue.Kind() {
 	case reflect.Bool:
-		b, err := strconv.ParseBool(expression.Value.Raw)
-		if err != nil {
-			return nil, fmt.Errorf("error parsing value as bool: %w", err)
-		}
-		return b, nil
+		return CoerceBool(expression.Value.Raw)
+
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		f, err := strconv.ParseInt(expression.Value.Raw, 10, 64)
-		if err != nil {
-			return nil, fmt.Errorf("error parsing value as int: %w", err)
-		}
-		return f, nil
+		return CoerceInt64(expression.Value.Raw)
+
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		f, err := strconv.ParseUint(expression.Value.Raw, 10, 64)
-		if err != nil {
-			return nil, fmt.Errorf("error parsing value as uint: %w", err)
-		}
-		return f, nil
+		return CoerceUint64(expression.Value.Raw)
+
 	case reflect.Float32:
-		f, err := strconv.ParseFloat(expression.Value.Raw, 32)
-		if err != nil {
-			return nil, fmt.Errorf("error parsing value as float32: %w", err)
-		}
-		return float32(f), nil
+		return CoerceFloat32(expression.Value.Raw)
+
 	case reflect.Float64:
-		f, err := strconv.ParseFloat(expression.Value.Raw, 64)
-		if err != nil {
-			return nil, fmt.Errorf("error parsing value as float64: %w", err)
-		}
-		return f, nil
-	case reflect.String:
+		return CoerceFloat64(expression.Value.Raw)
+
+	default:
 		return expression.Value.Raw, nil
 	}
-	return expression.Value.Raw, nil
 }
 
 func evaluateMatchExpression(expression *MatchExpression, datum interface{}) (bool, error) {

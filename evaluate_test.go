@@ -211,7 +211,7 @@ var evaluateTests map[string]expressionTest = map[string]expressionTest{
 			{expression: "foo.bar != false", result: true},
 			{expression: "foo.baz != false", result: false},
 			{expression: "foo.baz != true", result: true},
-			{expression: "foo.bar.baz == 3", result: false, err: `Selector ["foo" "bar" "baz"] is not valid`},
+			{expression: "foo.bar.baz == 3", result: false, err: `error finding value in datum: /foo/bar/baz: at part 2, invalid value kind: bool`},
 		},
 	},
 	"Nested Structs and Maps": {
@@ -245,11 +245,6 @@ var evaluateTests map[string]expressionTest = map[string]expressionTest{
 						z: 10,
 					},
 				},
-				SliceOfMapInfInf: []map[interface{}]interface{}{
-					{
-						1: 2,
-					},
-				},
 			},
 			TopInt: 5,
 		},
@@ -267,12 +262,10 @@ var evaluateTests map[string]expressionTest = map[string]expressionTest{
 			{expression: "Nested.Map contains nope or (Nested.Map contains bar and Nested.Map.bar == `bazel`) or TopInt != 0", result: true, benchQuick: true},
 			{expression: "Nested.MapOfStructs.one.Foo == 42", result: true},
 			{expression: "Nested.MapOfStructs is empty or (Nested.SliceOfInts contains 7 and 9 in Nested.SliceOfInts)", result: true, benchQuick: true},
-			{expression: "Nested.SliceOfStructs.X == 1", result: true},
-			{expression: "Nested.SliceOfStructs.Y == 4", result: false},
-			{expression: "Nested.Map.notfound == 4", result: false},
-			{expression: "Map in Nested", result: false, err: "Invalid match operator \"In\" for selector \"Nested\""},
-			{expression: "Nested.MapInfInf.foo == 4", result: false, err: `Selector ["Nested" "MapInfInf" "foo"] is not valid`},
-			{expression: "Nested.SliceOfMapInfInf.foo == 4", result: false, err: `Selector ["Nested" "SliceOfMapInfInf" "foo"] is not valid`},
+			{expression: "Nested.SliceOfStructs.0.X == 1", result: true},
+			{expression: "Nested.SliceOfStructs.0.Y == 4", result: false},
+			{expression: "Nested.Map.notfound == 4", result: false, err: `error finding value in datum: /Nested/Map/notfound at part 2: couldn't find key "notfound"`},
+			{expression: "Map in Nested", result: false, err: "Cannot perform in/contains operations on type struct for selector: \"Nested\""},
 		},
 	},
 }
