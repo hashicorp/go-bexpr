@@ -22,22 +22,21 @@ type expressionTest struct {
 var evaluateTests map[string]expressionTest = map[string]expressionTest{
 	"Flat Struct": {
 		testFlatStruct{
-			Int:        -1,
-			Int8:       -2,
-			Int16:      -3,
-			Int32:      -4,
-			Int64:      -5,
-			Uint:       6,
-			Uint8:      7,
-			Uint16:     8,
-			Uint32:     9,
-			Uint64:     10,
-			Float32:    1.1,
-			Float64:    1.2,
-			Bool:       true,
-			String:     "exported",
-			unexported: "unexported",
-			Hidden:     true,
+			Int:     -1,
+			Int8:    -2,
+			Int16:   -3,
+			Int32:   -4,
+			Int64:   -5,
+			Uint:    6,
+			Uint8:   7,
+			Uint16:  8,
+			Uint32:  9,
+			Uint64:  10,
+			Float32: 1.1,
+			Float64: 1.2,
+			Bool:    true,
+			String:  "exported",
+			Hidden:  true,
 		},
 		[]expressionCheck{
 			{expression: "Int == -1", result: true, benchQuick: true},
@@ -100,7 +99,6 @@ var evaluateTests map[string]expressionTest = map[string]expressionTest{
 			{expression: "part in String", result: false},
 			{expression: "port not in String", result: false},
 			{expression: "part not in String", result: true},
-			{expression: "unexported == `unexported`", result: false, err: "Selector [\"unexported\"] is not valid"},
 			{expression: "Hidden == false", result: false, err: "Selector [\"Hidden\"] is not valid"},
 			{expression: "String matches 	`^ex.*`", result: true, benchQuick: true},
 			{expression: "String not matches `^anchored.*`", result: true, benchQuick: true},
@@ -110,22 +108,21 @@ var evaluateTests map[string]expressionTest = map[string]expressionTest{
 	},
 	"Flat Struct Alt Types": {
 		testFlatStructAlt{
-			Int:        -1,
-			Int8:       -2,
-			Int16:      -3,
-			Int32:      -4,
-			Int64:      -5,
-			Uint:       6,
-			Uint8:      7,
-			Uint16:     8,
-			Uint32:     9,
-			Uint64:     10,
-			Float32:    1.1,
-			Float64:    1.2,
-			Bool:       true,
-			String:     "exported",
-			unexported: "unexported",
-			Hidden:     true,
+			Int:     -1,
+			Int8:    -2,
+			Int16:   -3,
+			Int32:   -4,
+			Int64:   -5,
+			Uint:    6,
+			Uint8:   7,
+			Uint16:  8,
+			Uint32:  9,
+			Uint64:  10,
+			Float32: 1.1,
+			Float64: 1.2,
+			Bool:    true,
+			String:  "exported",
+			Hidden:  true,
 		},
 		[]expressionCheck{
 			{expression: "Int == -1", result: true, benchQuick: true},
@@ -184,7 +181,6 @@ var evaluateTests map[string]expressionTest = map[string]expressionTest{
 			{expression: "String == `not-it`", result: false, benchQuick: true},
 			{expression: "String != `exported`", result: false},
 			{expression: "String != `not-it`", result: true},
-			{expression: "unexported == `unexported`", result: false, err: "Selector [\"unexported\"] is not valid"},
 			{expression: "Hidden == false", result: false, err: "Selector [\"Hidden\"] is not valid"},
 		},
 	},
@@ -229,12 +225,10 @@ var evaluateTests map[string]expressionTest = map[string]expressionTest{
 				MapOfStructs: map[string]testNestedLevel2_1{
 					"one": {
 						Foo: 42,
-						bar: "unexported",
 						Baz: "exported",
 					},
 					"two": {
 						Foo: 77,
-						bar: "unexported",
 						Baz: "consul",
 					},
 				},
@@ -295,7 +289,7 @@ func TestEvaluate(t *testing.T) {
 			for i, expTest := range tcase.expressions {
 				// capture these values in the closure
 				expTest := expTest
-				t.Run(fmt.Sprintf("#%d", i), func(t *testing.T) {
+				t.Run(fmt.Sprintf("#%d - %s", i, expTest.expression), func(t *testing.T) {
 					t.Parallel()
 
 					expr, err := CreateEvaluator(expTest.expression, nil)
