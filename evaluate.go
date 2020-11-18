@@ -100,7 +100,19 @@ func doMatchMatches(expression *MatchExpression, value reflect.Value) (bool, err
 		return false, fmt.Errorf("Value of type %s is not convertible to []byte", value.Type())
 	}
 
-	re := expression.Value.Converted.(*regexp.Regexp)
+	var re *regexp.Regexp
+	var ok bool
+	if expression.Value.Converted != nil {
+		re, ok = expression.Value.Converted.(*regexp.Regexp)
+	}
+	if !ok || re == nil {
+		var err error
+		re, err = regexp.Compile(expression.Value.Raw)
+		if err != nil {
+			return false, fmt.Errorf("Failed to compile regular expression %q: %v", expression.Value.Raw, err)
+		}
+		expression.Value.Converted = re
+	}
 
 	return re.Match(value.Convert(byteSliceTyp).Interface().([]byte)), nil
 }
