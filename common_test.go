@@ -2,7 +2,6 @@ package bexpr
 
 import (
 	"flag"
-	"fmt"
 	"reflect"
 )
 
@@ -104,75 +103,4 @@ type testNestedLevel1 struct {
 type testNestedTypes struct {
 	Nested testNestedLevel1
 	TopInt int
-}
-
-type testStructInterfaceImpl struct {
-	storage map[string]*testFlatStruct
-}
-
-func (t *testStructInterfaceImpl) EvaluateMatch(selector Selector, op MatchOperator, value interface{}) (bool, error) {
-	sel := selector.Path
-	switch sel[0] {
-	case "foo", "bar", "baz":
-		storageVal, ok := t.storage[sel[0]]
-		if !ok {
-			// default to no match if this struct isn't stored
-			return false, nil
-		}
-
-		if len(sel) < 2 {
-			return false, fmt.Errorf("Need more selector")
-		}
-
-		dataType, ok := testFlatStructKindMap[sel[1]]
-		if !ok {
-			return false, fmt.Errorf("Invalid selector")
-		}
-
-		eqFn, ok := primitiveEqualityFns[dataType]
-		if !ok {
-			return false, fmt.Errorf("Invalid data type")
-		}
-
-		result := false
-		switch sel[1] {
-		case "Int":
-			result = eqFn(value, reflect.ValueOf(storageVal.Int))
-		case "Int8":
-			result = eqFn(value, reflect.ValueOf(storageVal.Int8))
-		case "Int16":
-			result = eqFn(value, reflect.ValueOf(storageVal.Int16))
-		case "Int32":
-			result = eqFn(value, reflect.ValueOf(storageVal.Int32))
-		case "Int64":
-			result = eqFn(value, reflect.ValueOf(storageVal.Int64))
-		case "Uint":
-			result = eqFn(value, reflect.ValueOf(storageVal.Uint))
-		case "Uint8":
-			result = eqFn(value, reflect.ValueOf(storageVal.Uint8))
-		case "Uint16":
-			result = eqFn(value, reflect.ValueOf(storageVal.Uint16))
-		case "Uint32":
-			result = eqFn(value, reflect.ValueOf(storageVal.Uint32))
-		case "Uint64":
-			result = eqFn(value, reflect.ValueOf(storageVal.Uint64))
-		case "Float32":
-			result = eqFn(value, reflect.ValueOf(storageVal.Float32))
-		case "Float64":
-			result = eqFn(value, reflect.ValueOf(storageVal.Float64))
-		case "Bool":
-			result = eqFn(value, reflect.ValueOf(storageVal.Bool))
-		case "String":
-			result = eqFn(value, reflect.ValueOf(storageVal.String))
-		default:
-			return false, fmt.Errorf("Invalid data type")
-		}
-
-		if op == MatchNotEqual {
-			return !result, nil
-		}
-		return result, nil
-	default:
-		return false, fmt.Errorf("Invalid selector")
-	}
 }

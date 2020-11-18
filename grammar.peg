@@ -140,7 +140,7 @@ JsonPointerSegment <- '/' ident:[\pL\pN-_.~|]+ {
    return string(c.text)[1:], nil
 }
 
-Identifier <- [a-zA-Z0-9] [a-zA-Z0-9_]* {
+Identifier <- [a-zA-Z] [a-zA-Z0-9_]* {
    return string(c.text), nil
 }
 
@@ -148,6 +148,8 @@ SelectorOrIndex <- "." ident:Identifier {
    return ident, nil
 } / expr:IndexExpression {
    return expr, nil
+} / "." idx:[0-9]+ {
+   return string(c.text)[1:], nil
 }
 
 IndexExpression "index" <- "[" _? lit:StringLiteral _? "]" {

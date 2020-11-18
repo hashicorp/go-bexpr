@@ -10,19 +10,6 @@ type Filter struct {
 	evaluator *Evaluator
 }
 
-func getElementType(dataType interface{}) reflect.Type {
-	rtype := reflect.TypeOf(dataType)
-	if rtype == nil {
-		return nil
-	}
-	switch rtype.Kind() {
-	case reflect.Map, reflect.Slice, reflect.Array:
-		return rtype.Elem()
-	default:
-		return rtype
-	}
-}
-
 // Creates a filter to operate on the given data type.
 // The data type passed can be either be a container type (map, slice or array) or the element type.
 // For example, if you want to filter a []Foo then the data type to pass here is either []Foo or just Foo.

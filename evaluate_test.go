@@ -261,6 +261,7 @@ var evaluateTests map[string]expressionTest = map[string]expressionTest{
 			{expression: "TopInt != 0", result: true},
 			{expression: "Nested.Map contains nope or (Nested.Map contains bar and Nested.Map.bar == `bazel`) or TopInt != 0", result: true, benchQuick: true},
 			{expression: "Nested.MapOfStructs.one.Foo == 42", result: true},
+			{expression: "7 in Nested.SliceOfInts", result: true},
 			{expression: "Nested.MapOfStructs is empty or (Nested.SliceOfInts contains 7 and 9 in Nested.SliceOfInts)", result: true, benchQuick: true},
 			{expression: "Nested.SliceOfStructs.0.X == 1", result: true},
 			{expression: "Nested.SliceOfStructs.0.Y == 4", result: false},

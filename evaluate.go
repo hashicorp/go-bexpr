@@ -3,7 +3,6 @@ package bexpr
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"reflect"
 	"regexp"
 	"strings"
@@ -13,61 +12,31 @@ import (
 
 var byteSliceTyp reflect.Type = reflect.TypeOf([]byte{})
 
-var primitiveEqualityFns = map[reflect.Kind]func(first interface{}, second reflect.Value) bool{
-	reflect.Bool:    doEqualBool,
-	reflect.Int:     doEqualInt,
-	reflect.Int8:    doEqualInt8,
-	reflect.Int16:   doEqualInt16,
-	reflect.Int32:   doEqualInt32,
-	reflect.Int64:   doEqualInt64,
-	reflect.Uint:    doEqualUint,
-	reflect.Uint8:   doEqualUint8,
-	reflect.Uint16:  doEqualUint16,
-	reflect.Uint32:  doEqualUint32,
-	reflect.Uint64:  doEqualUint64,
-	reflect.Float32: doEqualFloat32,
-	reflect.Float64: doEqualFloat64,
-	reflect.String:  doEqualString,
+func primitiveEqualityFn(kind reflect.Kind) func(first interface{}, second reflect.Value) bool {
+	switch kind {
+	case reflect.Bool:
+		return doEqualBool
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return doEqualInt64
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return doEqualUint64
+	case reflect.Float32:
+		return doEqualFloat32
+	case reflect.Float64:
+		return doEqualFloat64
+	case reflect.String:
+		return doEqualString
+	default:
+		return nil
+	}
 }
 
 func doEqualBool(first interface{}, second reflect.Value) bool {
 	return first.(bool) == second.Bool()
 }
 
-func doEqualInt(first interface{}, second reflect.Value) bool {
-	return first.(int) == int(second.Int())
-}
-
-func doEqualInt8(first interface{}, second reflect.Value) bool {
-	return first.(int8) == int8(second.Int())
-}
-
-func doEqualInt16(first interface{}, second reflect.Value) bool {
-	return first.(int16) == int16(second.Int())
-}
-
-func doEqualInt32(first interface{}, second reflect.Value) bool {
-	return first.(int32) == int32(second.Int())
-}
-
 func doEqualInt64(first interface{}, second reflect.Value) bool {
 	return first.(int64) == second.Int()
-}
-
-func doEqualUint(first interface{}, second reflect.Value) bool {
-	return first.(uint) == uint(second.Uint())
-}
-
-func doEqualUint8(first interface{}, second reflect.Value) bool {
-	return first.(uint8) == uint8(second.Uint())
-}
-
-func doEqualUint16(first interface{}, second reflect.Value) bool {
-	return first.(uint16) == uint16(second.Uint())
-}
-
-func doEqualUint32(first interface{}, second reflect.Value) bool {
-	return first.(uint32) == uint32(second.Uint())
 }
 
 func doEqualUint64(first interface{}, second reflect.Value) bool {
@@ -118,19 +87,16 @@ func doMatchMatches(expression *MatchExpression, value reflect.Value) (bool, err
 
 func doMatchEqual(expression *MatchExpression, value reflect.Value) (bool, error) {
 	// NOTE: see preconditions in evaluateMatchExpressionRecurse
-	eqFn := primitiveEqualityFns[value.Kind()]
-	matchValue, err := getMatchExprValue(expression, value)
+	eqFn := primitiveEqualityFn(value.Kind())
+	matchValue, err := getMatchExprValue(expression, value.Kind())
 	if err != nil {
 		return false, fmt.Errorf("error getting match value in expression: %w", err)
 	}
-	log.Println(fmt.Sprintf("matchValue type %T, value %v", matchValue, matchValue))
-	log.Println(fmt.Sprintf("value kind %s", value.Kind()))
 	return eqFn(matchValue, value), nil
 }
 
 func doMatchIn(expression *MatchExpression, value reflect.Value) (bool, error) {
-	// NOTE: see preconditions in evaluateMatchExpressionRecurse
-	matchValue, err := getMatchExprValue(expression, value)
+	matchValue, err := getMatchExprValue(expression, value.Kind())
 	if err != nil {
 		return false, fmt.Errorf("error getting match value in expression: %w", err)
 	}
@@ -139,9 +105,16 @@ func doMatchIn(expression *MatchExpression, value reflect.Value) (bool, error) {
 	case reflect.Map:
 		found := value.MapIndex(reflect.ValueOf(matchValue))
 		return found.IsValid(), nil
+
 	case reflect.Slice, reflect.Array:
 		itemType := derefType(value.Type().Elem())
-		eqFn := primitiveEqualityFns[itemType.Kind()]
+		// Once we know the item type, we need to re-derive the match value for
+		// equality assertion
+		matchValue, err = getMatchExprValue(expression, itemType.Kind())
+		if err != nil {
+			return false, fmt.Errorf("error getting match value in expression: %w", err)
+		}
+		eqFn := primitiveEqualityFn(itemType.Kind())
 
 		for i := 0; i < value.Len(); i++ {
 			item := value.Index(i)
@@ -153,8 +126,10 @@ func doMatchIn(expression *MatchExpression, value reflect.Value) (bool, error) {
 		}
 
 		return false, nil
+
 	case reflect.String:
 		return strings.Contains(value.String(), matchValue.(string)), nil
+
 	default:
 		// this shouldn't be possible but we have to have something to return to keep the compiler happy
 		return false, fmt.Errorf("Cannot perform in/contains operations on type %s for selector: %q", kind, expression.Selector)
@@ -166,12 +141,12 @@ func doMatchIsEmpty(matcher *MatchExpression, value reflect.Value) (bool, error)
 	return value.Len() == 0, nil
 }
 
-func getMatchExprValue(expression *MatchExpression, rvalue reflect.Value) (interface{}, error) {
+func getMatchExprValue(expression *MatchExpression, rvalue reflect.Kind) (interface{}, error) {
 	if expression.Value == nil {
 		return nil, nil
 	}
 
-	switch rvalue.Kind() {
+	switch rvalue {
 	case reflect.Bool:
 		return CoerceBool(expression.Value.Raw)
 
@@ -226,10 +201,7 @@ func evaluateMatchExpression(expression *MatchExpression, datum interface{}) (bo
 		val = pvalue.Float()
 	}
 
-	log.Println(fmt.Sprintf("before rvalue %T, %v", val, val))
-
 	rvalue := reflect.Indirect(reflect.ValueOf(val))
-	log.Println(fmt.Sprintf("rvalue %s, %v", rvalue.Kind(), rvalue))
 	switch expression.Operator {
 	case MatchEqual:
 		return doMatchEqual(expression, rvalue)
