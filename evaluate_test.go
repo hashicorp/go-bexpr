@@ -99,7 +99,7 @@ var evaluateTests map[string]expressionTest = map[string]expressionTest{
 			{expression: "part in String", result: false},
 			{expression: "port not in String", result: false},
 			{expression: "part not in String", result: true},
-			{expression: "Hidden == false", result: false, err: "Selector [\"Hidden\"] is not valid"},
+			{expression: "Hidden == false", result: false, err: "error finding value in datum: /Hidden at part 0: struct field \"Hidden\" is ignored and cannot be used"},
 			{expression: "String matches 	`^ex.*`", result: true, benchQuick: true},
 			{expression: "String not matches `^anchored.*`", result: true, benchQuick: true},
 			{expression: "String matches 	`^anchored.*`", result: false},
@@ -181,7 +181,7 @@ var evaluateTests map[string]expressionTest = map[string]expressionTest{
 			{expression: "String == `not-it`", result: false, benchQuick: true},
 			{expression: "String != `exported`", result: false},
 			{expression: "String != `not-it`", result: true},
-			{expression: "Hidden == false", result: false, err: "Selector [\"Hidden\"] is not valid"},
+			{expression: "Hidden == false", result: false, err: "error finding value in datum: /Hidden at part 0: struct field \"Hidden\" is ignored and cannot be used"},
 		},
 	},
 	"map[string]map[string]bool": {

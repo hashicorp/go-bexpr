@@ -192,10 +192,16 @@ func getMatchExprValue(expression *MatchExpression, rvalue reflect.Value) (inter
 			return nil, fmt.Errorf("error parsing value as uint: %w", err)
 		}
 		return f, nil
-	case reflect.Float32, reflect.Float64:
+	case reflect.Float32:
+		f, err := strconv.ParseFloat(expression.Value.Raw, 32)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing value as float32: %w", err)
+		}
+		return float32(f), nil
+	case reflect.Float64:
 		f, err := strconv.ParseFloat(expression.Value.Raw, 64)
 		if err != nil {
-			return nil, fmt.Errorf("error parsing value as float: %w", err)
+			return nil, fmt.Errorf("error parsing value as float64: %w", err)
 		}
 		return f, nil
 	case reflect.String:
@@ -205,9 +211,13 @@ func getMatchExprValue(expression *MatchExpression, rvalue reflect.Value) (inter
 }
 
 func evaluateMatchExpression(expression *MatchExpression, datum interface{}) (bool, error) {
-	ptr := fmt.Sprintf("/%s", strings.Join(expression.Selector.Path, "/"))
-	log.Println(ptr)
-	val, err := pointerstructure.Get(datum, ptr)
+	path := fmt.Sprintf("/%s", strings.Join(expression.Selector.Path, "/"))
+	ptr, err := pointerstructure.Parse(path)
+	if err != nil {
+		return false, fmt.Errorf("error parsing path: %w", err)
+	}
+	ptr.Config.TagName = "bexpr"
+	val, err := ptr.Get(datum)
 	if err != nil {
 		return false, fmt.Errorf("error finding value in datum: %w", err)
 	}
@@ -228,7 +238,9 @@ func evaluateMatchExpression(expression *MatchExpression, datum interface{}) (bo
 		val = pvalue.Int()
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		val = pvalue.Uint()
-	case reflect.Float32, reflect.Float64:
+	case reflect.Float32:
+		val = float32(pvalue.Float())
+	case reflect.Float64:
 		val = pvalue.Float()
 	}
 
