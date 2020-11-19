@@ -12,21 +12,22 @@ func FullBenchmarks() bool {
 }
 
 type testFlatStruct struct {
-	Int     int
-	Int8    int8
-	Int16   int16
-	Int32   int32
-	Int64   int64
-	Uint    uint
-	Uint8   uint8
-	Uint16  uint16
-	Uint32  uint32
-	Uint64  uint64
-	Float32 float32
-	Float64 float64
-	Bool    bool
-	String  string
-	Hidden  bool `bexpr:"-"`
+	Int        int
+	Int8       int8
+	Int16      int16
+	Int32      int32
+	Int64      int64
+	Uint       uint
+	Uint8      uint8
+	Uint16     uint16
+	Uint32     uint32
+	Uint64     uint64
+	Float32    float32
+	Float64    float64
+	Bool       bool
+	String     string
+	unexported string
+	Hidden     bool `bexpr:"-"`
 }
 
 type CustomInt int
@@ -45,21 +46,22 @@ type CustomBool bool
 type CustomString string
 
 type testFlatStructAlt struct {
-	Int     CustomInt
-	Int8    CustomInt8
-	Int16   CustomInt16
-	Int32   CustomInt32
-	Int64   CustomInt64
-	Uint    CustomUint
-	Uint8   CustomUint8
-	Uint16  CustomUint16
-	Uint32  CustomUint32
-	Uint64  CustomUint64
-	Float32 CustomFloat32
-	Float64 CustomFloat64
-	Bool    CustomBool
-	String  CustomString
-	Hidden  CustomBool `bexpr:"-"`
+	Int        CustomInt
+	Int8       CustomInt8
+	Int16      CustomInt16
+	Int32      CustomInt32
+	Int64      CustomInt64
+	Uint       CustomUint
+	Uint8      CustomUint8
+	Uint16     CustomUint16
+	Uint32     CustomUint32
+	Uint64     CustomUint64
+	Float32    CustomFloat32
+	Float64    CustomFloat64
+	Bool       CustomBool
+	String     CustomString
+	unexported CustomString
+	Hidden     CustomBool `bexpr:"-"`
 }
 
 var testFlatStructKindMap map[string]reflect.Kind = map[string]reflect.Kind{
