@@ -131,7 +131,6 @@ func doMatchIn(expression *MatchExpression, value reflect.Value) (bool, error) {
 		return strings.Contains(value.String(), matchValue.(string)), nil
 
 	default:
-		// this shouldn't be possible but we have to have something to return to keep the compiler happy
 		return false, fmt.Errorf("Cannot perform in/contains operations on type %s for selector: %q", kind, expression.Selector)
 	}
 }
