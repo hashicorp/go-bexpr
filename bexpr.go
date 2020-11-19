@@ -4,31 +4,32 @@
 // was matched by the expression
 package bexpr
 
+//go:generate pigeon -o grammar/grammar.go -optimize-parser grammar/grammar.peg
+//go:generate goimports -w grammar/grammar.go
+
+import (
+	"github.com/hashicorp/go-bexpr/grammar"
+)
+
 type Evaluator struct {
 	// The syntax tree
-	ast Expression
-
-	// A few configurations for extra validation of the AST
-	config EvaluatorConfig
-}
-
-// Extra configuration used to perform further validation on a parsed
-// expression. Currently this does not hold any fields, but it avoids changing
-// the function signature.
-//
-// TODO: Remove this? Perhaps in favor of an Options approach for the calls that
-// need it?
-type EvaluatorConfig struct {
+	ast grammar.Expression
 }
 
 func CreateEvaluator(expression string, opts ...Option) (*Evaluator, error) {
-	ast, err := Parse("", []byte(expression), opts...)
+	parsedOpts := getOpts(opts...)
+	var parserOpts []grammar.Option
+	if parsedOpts.withMaxExpressions != 0 {
+		parserOpts = append(parserOpts, grammar.MaxExpressions(parsedOpts.withMaxExpressions))
+	}
+
+	ast, err := grammar.Parse("", []byte(expression), parserOpts...)
 	if err != nil {
 		return nil, err
 	}
 
 	eval := &Evaluator{
-		ast: ast.(Expression),
+		ast: ast.(grammar.Expression),
 	}
 
 	return eval, nil

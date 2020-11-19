@@ -1,4 +1,4 @@
-package bexpr
+package grammar
 
 import (
 	"fmt"
@@ -7,9 +7,6 @@ import (
 )
 
 // TODO - Probably should make most of what is in here un-exported
-
-//go:generate pigeon -o grammar.go -optimize-parser grammar.peg
-//go:generate goimports -w grammar.go
 
 type Expression interface {
 	ExpressionDump(w io.Writer, indent string, level int)

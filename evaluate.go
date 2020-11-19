@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/hashicorp/go-bexpr/grammar"
 	"github.com/mitchellh/pointerstructure"
 )
 
@@ -63,7 +64,7 @@ func derefType(rtype reflect.Type) reflect.Type {
 	return rtype
 }
 
-func doMatchMatches(expression *MatchExpression, value reflect.Value) (bool, error) {
+func doMatchMatches(expression *grammar.MatchExpression, value reflect.Value) (bool, error) {
 	if !value.Type().ConvertibleTo(byteSliceTyp) {
 		return false, fmt.Errorf("Value of type %s is not convertible to []byte", value.Type())
 	}
@@ -85,8 +86,8 @@ func doMatchMatches(expression *MatchExpression, value reflect.Value) (bool, err
 	return re.Match(value.Convert(byteSliceTyp).Interface().([]byte)), nil
 }
 
-func doMatchEqual(expression *MatchExpression, value reflect.Value) (bool, error) {
-	// NOTE: see preconditions in evaluateMatchExpressionRecurse
+func doMatchEqual(expression *grammar.MatchExpression, value reflect.Value) (bool, error) {
+	// NOTE: see preconditions in evaluategrammar.MatchExpressionRecurse
 	eqFn := primitiveEqualityFn(value.Kind())
 	matchValue, err := getMatchExprValue(expression, value.Kind())
 	if err != nil {
@@ -95,7 +96,7 @@ func doMatchEqual(expression *MatchExpression, value reflect.Value) (bool, error
 	return eqFn(matchValue, value), nil
 }
 
-func doMatchIn(expression *MatchExpression, value reflect.Value) (bool, error) {
+func doMatchIn(expression *grammar.MatchExpression, value reflect.Value) (bool, error) {
 	matchValue, err := getMatchExprValue(expression, value.Kind())
 	if err != nil {
 		return false, fmt.Errorf("error getting match value in expression: %w", err)
@@ -135,12 +136,12 @@ func doMatchIn(expression *MatchExpression, value reflect.Value) (bool, error) {
 	}
 }
 
-func doMatchIsEmpty(matcher *MatchExpression, value reflect.Value) (bool, error) {
-	// NOTE: see preconditions in evaluateMatchExpressionRecurse
+func doMatchIsEmpty(matcher *grammar.MatchExpression, value reflect.Value) (bool, error) {
+	// NOTE: see preconditions in evaluategrammar.MatchExpressionRecurse
 	return value.Len() == 0, nil
 }
 
-func getMatchExprValue(expression *MatchExpression, rvalue reflect.Kind) (interface{}, error) {
+func getMatchExprValue(expression *grammar.MatchExpression, rvalue reflect.Kind) (interface{}, error) {
 	if expression.Value == nil {
 		return nil, nil
 	}
@@ -166,7 +167,7 @@ func getMatchExprValue(expression *MatchExpression, rvalue reflect.Kind) (interf
 	}
 }
 
-func evaluateMatchExpression(expression *MatchExpression, datum interface{}) (bool, error) {
+func evaluateMatchExpression(expression *grammar.MatchExpression, datum interface{}) (bool, error) {
 	path := fmt.Sprintf("/%s", strings.Join(expression.Selector.Path, "/"))
 	ptr, err := pointerstructure.Parse(path)
 	if err != nil {
@@ -190,33 +191,33 @@ func evaluateMatchExpression(expression *MatchExpression, datum interface{}) (bo
 
 	rvalue := reflect.Indirect(reflect.ValueOf(val))
 	switch expression.Operator {
-	case MatchEqual:
+	case grammar.MatchEqual:
 		return doMatchEqual(expression, rvalue)
-	case MatchNotEqual:
+	case grammar.MatchNotEqual:
 		result, err := doMatchEqual(expression, rvalue)
 		if err == nil {
 			return !result, nil
 		}
 		return false, err
-	case MatchIn:
+	case grammar.MatchIn:
 		return doMatchIn(expression, rvalue)
-	case MatchNotIn:
+	case grammar.MatchNotIn:
 		result, err := doMatchIn(expression, rvalue)
 		if err == nil {
 			return !result, nil
 		}
 		return false, err
-	case MatchIsEmpty:
+	case grammar.MatchIsEmpty:
 		return doMatchIsEmpty(expression, rvalue)
-	case MatchIsNotEmpty:
+	case grammar.MatchIsNotEmpty:
 		result, err := doMatchIsEmpty(expression, rvalue)
 		if err == nil {
 			return !result, nil
 		}
 		return false, err
-	case MatchMatches:
+	case grammar.MatchMatches:
 		return doMatchMatches(expression, rvalue)
-	case MatchNotMatches:
+	case grammar.MatchNotMatches:
 		result, err := doMatchMatches(expression, rvalue)
 		if err == nil {
 			return !result, nil
@@ -227,17 +228,17 @@ func evaluateMatchExpression(expression *MatchExpression, datum interface{}) (bo
 	}
 }
 
-func evaluate(ast Expression, datum interface{}) (bool, error) {
+func evaluate(ast grammar.Expression, datum interface{}) (bool, error) {
 	switch node := ast.(type) {
-	case *UnaryExpression:
+	case *grammar.UnaryExpression:
 		switch node.Operator {
-		case UnaryOpNot:
+		case grammar.UnaryOpNot:
 			result, err := evaluate(node.Operand, datum)
 			return !result, err
 		}
-	case *BinaryExpression:
+	case *grammar.BinaryExpression:
 		switch node.Operator {
-		case BinaryOpAnd:
+		case grammar.BinaryOpAnd:
 			result, err := evaluate(node.Left, datum)
 			if err != nil || !result {
 				return result, err
@@ -245,7 +246,7 @@ func evaluate(ast Expression, datum interface{}) (bool, error) {
 
 			return evaluate(node.Right, datum)
 
-		case BinaryOpOr:
+		case grammar.BinaryOpOr:
 			result, err := evaluate(node.Left, datum)
 			if err != nil || result {
 				return result, err
@@ -253,7 +254,7 @@ func evaluate(ast Expression, datum interface{}) (bool, error) {
 
 			return evaluate(node.Right, datum)
 		}
-	case *MatchExpression:
+	case *grammar.MatchExpression:
 		return evaluateMatchExpression(node, datum)
 	}
 	return false, fmt.Errorf("Invalid AST node")
