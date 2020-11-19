@@ -13,7 +13,7 @@ type Example struct {
 	Y string `bexpr:"y"`
 
 	// Fields can use multiple names for accessing
-	Z bool `bexpr:"Z,z,foo"`
+	Z bool `bexpr:"Z"`
 
 	// Tag with "-" to prevent allowing this field from being used
 	Hidden string `bexpr:"-"`
@@ -31,8 +31,6 @@ func main() {
 	expressions := []string{
 		"foo.X == 5",
 		"bar.y == bar",
-		"foo.foo != false",
-		"foo.z == true",
 		"foo.Z == true",
 
 		// will error in evaluator creation

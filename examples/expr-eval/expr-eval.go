@@ -87,10 +87,6 @@ var expressions []string = []string{
 	"X == 3",
 	// should evaluate to true
 	"Internal.fields is not empty",
-	// should evaluate to true
-	"0 in SliceInternal.fields",
-	// should evaluate to false
-	"4 not in SliceInternal.fields",
 	// should evaluate to false
 	"MapInternal.fib.Name != fib",
 	// should evaluate to true
@@ -99,7 +95,7 @@ var expressions []string = []string{
 
 func main() {
 	for _, expression := range expressions {
-		eval, err := bexpr.CreateEvaluator(expression, nil)
+		eval, err := bexpr.CreateEvaluator(expression)
 
 		if err != nil {
 			fmt.Printf("Failed to create evaluator for expression %q: %v\n", expression, err)
