@@ -189,18 +189,6 @@ func evaluateMatchExpression(expression *MatchExpression, datum interface{}) (bo
 		}
 	}
 
-	pvalue := reflect.Indirect(reflect.ValueOf(val))
-	switch pvalue.Kind() {
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		val = pvalue.Int()
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		val = pvalue.Uint()
-	case reflect.Float32:
-		val = float32(pvalue.Float())
-	case reflect.Float64:
-		val = pvalue.Float()
-	}
-
 	rvalue := reflect.Indirect(reflect.ValueOf(val))
 	switch expression.Operator {
 	case MatchEqual:
