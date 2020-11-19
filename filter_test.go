@@ -143,7 +143,7 @@ func TestFilter(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			flt, err := CreateFilter(tcase.expression, nil)
+			flt, err := CreateFilter(tcase.expression)
 			require.NoError(t, err)
 			require.NotNil(t, flt)
 
@@ -185,7 +185,7 @@ func BenchmarkFilter(b *testing.B) {
 		bcase := bcase
 		name := name
 		b.Run(name, func(b *testing.B) {
-			flt, err := CreateFilter(bcase.expression, nil)
+			flt, err := CreateFilter(bcase.expression)
 			require.NoError(b, err)
 			require.NotNil(b, flt)
 

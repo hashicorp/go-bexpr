@@ -21,19 +21,14 @@ type Evaluator struct {
 type EvaluatorConfig struct {
 }
 
-func CreateEvaluator(expression string, config *EvaluatorConfig) (*Evaluator, error) {
-	ast, err := Parse("", []byte(expression))
+func CreateEvaluator(expression string, opts ...Option) (*Evaluator, error) {
+	ast, err := Parse("", []byte(expression), opts...)
 	if err != nil {
 		return nil, err
 	}
 
-	if config == nil {
-		config = &EvaluatorConfig{}
-	}
-
 	eval := &Evaluator{
-		ast:    ast.(Expression),
-		config: *config,
+		ast: ast.(Expression),
 	}
 
 	return eval, nil

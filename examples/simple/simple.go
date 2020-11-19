@@ -24,8 +24,8 @@ type Example struct {
 
 func main() {
 	value := map[string]Example{
-		"foo": Example{X: 5, Y: "foo", Z: true, Hidden: "yes", unexported: "no"},
-		"bar": Example{X: 42, Y: "bar", Z: false, Hidden: "no", unexported: "yes"},
+		"foo": {X: 5, Y: "foo", Z: true, Hidden: "yes", unexported: "no"},
+		"bar": {X: 42, Y: "bar", Z: false, Hidden: "no", unexported: "yes"},
 	}
 
 	expressions := []string{
