@@ -126,12 +126,13 @@ Selector "selector" <- first:Identifier rest:SelectorOrIndex* {
       }
    }
 
-   // Validate
-   ptr := fmt.Sprintf("/%s", strings.Join(sel.Path, "/"))
-   _, err := pointerstructure.Parse(ptr)
+   // Validate and cache
+   ptrStr := fmt.Sprintf("/%s", strings.Join(sel.Path, "/"))
+   ptr, err := pointerstructure.Parse(ptrStr)
    if err != nil {
       return nil, fmt.Errorf("error validating json pointer: %w", err)
    }
+   sel.Path = ptr.Parts
 
    return sel, nil
 }

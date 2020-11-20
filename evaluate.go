@@ -168,12 +168,12 @@ func getMatchExprValue(expression *grammar.MatchExpression, rvalue reflect.Kind)
 }
 
 func evaluateMatchExpression(expression *grammar.MatchExpression, datum interface{}) (bool, error) {
-	path := fmt.Sprintf("/%s", strings.Join(expression.Selector.Path, "/"))
-	ptr, err := pointerstructure.Parse(path)
-	if err != nil {
-		return false, fmt.Errorf("error parsing path: %w", err)
+	ptr := pointerstructure.Pointer{
+		Parts: expression.Selector.Path,
+		Config: pointerstructure.Config{
+			TagName: "bexpr",
+		},
 	}
-	ptr.Config.TagName = "bexpr"
 	val, err := ptr.Get(datum)
 	if err != nil {
 		return false, fmt.Errorf("error finding value in datum: %w", err)
