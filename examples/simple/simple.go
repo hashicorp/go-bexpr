@@ -9,11 +9,9 @@ import (
 type Example struct {
 	X int
 
-	// Can renamed a field with the struct tag
+	// Can rename a field with the struct tag
 	Y string `bexpr:"y"`
-
-	// Fields can use multiple names for accessing
-	Z bool `bexpr:"Z"`
+	Z bool   `bexpr:"baz"`
 
 	// Tag with "-" to prevent allowing this field from being used
 	Hidden string `bexpr:"-"`
@@ -31,7 +29,7 @@ func main() {
 	expressions := []string{
 		"foo.X == 5",
 		"bar.y == bar",
-		"foo.Z == true",
+		"foo.baz == true",
 
 		// will error in evaluator creation
 		"bar.Hidden != yes",
@@ -41,7 +39,7 @@ func main() {
 	}
 
 	for _, expression := range expressions {
-		eval, err := bexpr.CreateEvaluator(expression, nil)
+		eval, err := bexpr.CreateEvaluator(expression)
 
 		if err != nil {
 			fmt.Printf("Failed to create evaluator for expression %q: %v\n", expression, err)

@@ -1,20 +1,15 @@
 # bexpr - Boolean Expression Evaluator [![GoDoc](https://godoc.org/github.com/hashicorp/go-bexpr?status.svg)](https://godoc.org/github.com/hashicorp/go-bexpr) [![CircleCI](https://circleci.com/gh/hashicorp/go-bexpr.svg?style=svg)](https://circleci.com/gh/hashicorp/go-bexpr)
 
-`bexpr` is a Go (golang) library to provide generic boolean expression evaluation and filtering for Go data structures.
-
-## Limitations
-
-Currently `bexpr` does not support operating on types with cyclical structures. Attempting to generate the fields
-of these types will cause a stack overflow. There are however two means of getting around this. First if you do not
-need the nested type to be available during evaluation then you can simply add the  `bexpr:"-"` struct tag to the
-fields where that type is referenced and `bexpr` will not delve further into that type. A second solution is implement
-the `MatchExpressionEvaluator` interface and provide the necessary field configurations yourself.
-
-Eventually this lib will support handling these cycles automatically.
-
-## Stability
-
-Currently there is a `MatchExpressionEvaluator` interface that can be used to implement custom behavior. This interface should be considered *experimental* and is likely to change in the future. One need for the change is to make it easier for custom implementations to re-invoke the main bexpr logic on subfields so that they do not have to implement custom logic for themselves and every sub field they contain. With the current interface its not really possible.
+`bexpr` is a Go (golang) library to provide generic boolean expression
+evaluation and filtering for Go data structures and maps. Under the hood,
+`bexpr` uses
+[`pointerstructure`](https://github.com/mitchellh/pointerstructure), meaning
+that any path within a map or structure that can be expressed via that library
+can be used with `bexpr`. This also means that you can use the custom `bexpr`
+dotted syntax (kept mainly for backwards compatibility) to select values in
+expressions, or, by enclosing the selectors in quotes, you can use [JSON
+Pointer](https://tools.ietf.org/html/rfc6901) syntax to select values in
+expressions.
 
 ## Usage (Reflection)
 
@@ -31,11 +26,9 @@ import (
 type Example struct {
    X int
 
-   // Can renamed a field with the struct tag
-   Y string `bexpr:"y"`
-
-   // Fields can use multiple names for accessing
-   Z bool `bexpr:"Z,z,foo"`
+	// Can rename a field with the struct tag
+	Y string `bexpr:"y"`
+	Z bool `bexpr:"foo"`
 
    // Tag with "-" to prevent allowing this field from being used
    Hidden string `bexpr:"-"`
@@ -51,21 +44,19 @@ func main() {
    }
 
    expressions := []string{
-      "foo.X == 5",
-      "bar.y == bar",
-      "foo.foo != false",
-      "foo.z == true",
-      "foo.Z == true",
+		"foo.X == 5",
+		"bar.y == bar",
+		"foo.baz == true",
 
-      // will error in evaluator creation
-      "bar.Hidden != yes",
+		// will error in evaluator creation
+		"bar.Hidden != yes",
 
-      // will error in evaluator creation
-      "foo.unexported == no",
-   }
+		// will error in evaluator creation
+		"foo.unexported == no",
+	}
 
    for _, expression := range expressions {
-      eval, err := bexpr.CreateEvaluatorForType(expression, nil, (*map[string]Example)(nil))
+      eval, err := bexpr.CreateEvaluator(expression)
 
       if err != nil {
          fmt.Printf("Failed to create evaluator for expression %q: %v\n", expression, err)
@@ -88,11 +79,9 @@ This will output:
 ```
 Result of expression "foo.X == 5" evaluation: true
 Result of expression "bar.y == bar" evaluation: true
-Result of expression "foo.foo != false" evaluation: true
-Result of expression "foo.z == true" evaluation: true
-Result of expression "foo.Z == true" evaluation: true
-Failed to create evaluator for expression "bar.Hidden != yes": Selector "bar.Hidden" is not valid
-Failed to create evaluator for expression "foo.unexported == no": Selector "foo.unexported" is not valid
+Result of expression "foo.baz == true" evaluation: true
+Failed to run evaluation of expression "bar.Hidden != yes": error finding value in datum: /bar/Hidden at part 1: struct field "Hidden" is ignored and cannot be used
+Failed to run evaluation of expression "foo.unexported == no": error finding value in datum: /foo/unexported at part 1: couldn't find struct field with name "unexported"
 ```
 
 ## Testing
