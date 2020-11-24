@@ -1,9 +1,11 @@
 {
-package bexpr
+package grammar
 
 import (
    "strconv"
    "strings"
+
+   "github.com/mitchellh/pointerstructure"
 )
 }
 
@@ -123,6 +125,15 @@ Selector "selector" <- first:Identifier rest:SelectorOrIndex* {
          sel.Path = append(sel.Path, v.(string))
       }
    }
+
+   // Validate and cache
+   ptrStr := fmt.Sprintf("/%s", strings.Join(sel.Path, "/"))
+   ptr, err := pointerstructure.Parse(ptrStr)
+   if err != nil {
+      return nil, fmt.Errorf("error validating json pointer: %w", err)
+   }
+   sel.Path = ptr.Parts
+
    return sel, nil
 }
 
@@ -138,6 +149,8 @@ SelectorOrIndex <- "." ident:Identifier {
    return ident, nil
 } / expr:IndexExpression {
    return expr, nil
+} / "." idx:[0-9]+ {
+   return string(c.text)[1:], nil
 }
 
 IndexExpression "index" <- "[" _? lit:StringLiteral _? "]" {

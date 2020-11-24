@@ -1,4 +1,4 @@
-package bexpr
+package grammar
 
 import (
 	"bytes"

@@ -18,11 +18,11 @@ TEST_VERBOSE_ARG=
 endif
 
 TEST_RESULTS?="/tmp/test-results"
-grammar.go: grammar.peg
+grammar/grammar.go: grammar/grammar.peg
 	@echo "Regenerating Parser"
 	@go generate ./
 
-generate: grammar.go
+generate: grammar/grammar.go
 
 test: generate
 	@go test $(TEST_VERBOSE_ARG) $(GOTEST_PKGS)

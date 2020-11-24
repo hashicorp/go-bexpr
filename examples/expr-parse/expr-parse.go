@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	bexpr "github.com/hashicorp/go-bexpr"
+	"github.com/hashicorp/go-bexpr/grammar"
 )
 
 func main() {
@@ -16,12 +16,12 @@ func main() {
 	}
 
 	for i, exp := range args {
-		ast, err := bexpr.Parse(fmt.Sprintf("Expression %d", i), []byte(exp))
+		ast, err := grammar.Parse(fmt.Sprintf("Expression %d", i), []byte(exp))
 
 		if err != nil {
 			fmt.Println(err)
 		} else {
-			ast.(bexpr.Expression).ExpressionDump(os.Stdout, "   ", 1)
+			ast.(grammar.Expression).ExpressionDump(os.Stdout, "   ", 1)
 		}
 	}
 }

@@ -11,7 +11,6 @@ func TestCreateEvaluator(t *testing.T) {
 
 	type testCase struct {
 		expression string
-		config     EvaluatorConfig
 		err        string
 	}
 
@@ -27,7 +26,7 @@ func TestCreateEvaluator(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			expr, err := CreateEvaluator(tcase.expression, &tcase.config)
+			expr, err := CreateEvaluator(tcase.expression)
 			if tcase.err == "" {
 				require.NoError(t, err)
 				require.NotNil(t, expr)

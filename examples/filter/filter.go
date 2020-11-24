@@ -13,22 +13,22 @@ type Filterable struct {
 
 func main() {
 	before := [5]Filterable{
-		Filterable{X: 1, Y: 2},
-		Filterable{X: 2, Y: 3},
-		Filterable{X: 3, Y: 4},
-		Filterable{X: 4, Y: 5},
-		Filterable{X: 5, Y: 6},
+		{X: 1, Y: 2},
+		{X: 2, Y: 3},
+		{X: 3, Y: 4},
+		{X: 4, Y: 5},
+		{X: 5, Y: 6},
 	}
 
 	beforeMap := map[string]Filterable{
-		"one":   Filterable{X: 1, Y: 2},
-		"two":   Filterable{X: 2, Y: 3},
-		"three": Filterable{X: 3, Y: 4},
-		"four":  Filterable{X: 4, Y: 5},
-		"five":  Filterable{X: 5, Y: 6},
+		"one":   {X: 1, Y: 2},
+		"two":   {X: 2, Y: 3},
+		"three": {X: 3, Y: 4},
+		"four":  {X: 4, Y: 5},
+		"five":  {X: 5, Y: 6},
 	}
 
-	filter, err := bexpr.CreateFilter("X == 2 or Y == 2", nil, (*Filterable)(nil))
+	filter, err := bexpr.CreateFilter("X == 2 or Y == 2")
 	if err != nil {
 		fmt.Printf("Failed to create filter: %v\n", err)
 		return
