@@ -2,6 +2,7 @@ package bexpr
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"reflect"
 	"regexp"
@@ -89,6 +90,9 @@ func doMatchMatches(expression *grammar.MatchExpression, value reflect.Value) (b
 func doMatchEqual(expression *grammar.MatchExpression, value reflect.Value) (bool, error) {
 	// NOTE: see preconditions in evaluategrammar.MatchExpressionRecurse
 	eqFn := primitiveEqualityFn(value.Kind())
+	if eqFn == nil {
+		return false, errors.New("unable to find suitable primitive comparison function for matching")
+	}
 	matchValue, err := getMatchExprValue(expression, value.Kind())
 	if err != nil {
 		return false, fmt.Errorf("error getting match value in expression: %w", err)
@@ -116,6 +120,9 @@ func doMatchIn(expression *grammar.MatchExpression, value reflect.Value) (bool, 
 			return false, fmt.Errorf("error getting match value in expression: %w", err)
 		}
 		eqFn := primitiveEqualityFn(itemType.Kind())
+		if eqFn == nil {
+			return false, errors.New(`unable to find suitable primitive comparison function for "in" comparison`)
+		}
 
 		for i := 0; i < value.Len(); i++ {
 			item := value.Index(i)
