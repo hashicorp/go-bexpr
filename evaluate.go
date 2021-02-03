@@ -174,11 +174,12 @@ func getMatchExprValue(expression *grammar.MatchExpression, rvalue reflect.Kind)
 	}
 }
 
-func evaluateMatchExpression(expression *grammar.MatchExpression, datum interface{}) (bool, error) {
+func evaluateMatchExpression(expression *grammar.MatchExpression, datum interface{}, opt ...Option) (bool, error) {
+	opts := getOpts(opt...)
 	ptr := pointerstructure.Pointer{
 		Parts: expression.Selector.Path,
 		Config: pointerstructure.Config{
-			TagName: "bexpr",
+			TagName: opts.withTagName,
 		},
 	}
 	val, err := ptr.Get(datum)
@@ -235,34 +236,34 @@ func evaluateMatchExpression(expression *grammar.MatchExpression, datum interfac
 	}
 }
 
-func evaluate(ast grammar.Expression, datum interface{}) (bool, error) {
+func evaluate(ast grammar.Expression, datum interface{}, opt ...Option) (bool, error) {
 	switch node := ast.(type) {
 	case *grammar.UnaryExpression:
 		switch node.Operator {
 		case grammar.UnaryOpNot:
-			result, err := evaluate(node.Operand, datum)
+			result, err := evaluate(node.Operand, datum, opt...)
 			return !result, err
 		}
 	case *grammar.BinaryExpression:
 		switch node.Operator {
 		case grammar.BinaryOpAnd:
-			result, err := evaluate(node.Left, datum)
+			result, err := evaluate(node.Left, datum, opt...)
 			if err != nil || !result {
 				return result, err
 			}
 
-			return evaluate(node.Right, datum)
+			return evaluate(node.Right, datum, opt...)
 
 		case grammar.BinaryOpOr:
-			result, err := evaluate(node.Left, datum)
+			result, err := evaluate(node.Left, datum, opt...)
 			if err != nil || result {
 				return result, err
 			}
 
-			return evaluate(node.Right, datum)
+			return evaluate(node.Right, datum, opt...)
 		}
 	case *grammar.MatchExpression:
-		return evaluateMatchExpression(node, datum)
+		return evaluateMatchExpression(node, datum, opt...)
 	}
 	return false, fmt.Errorf("Invalid AST node")
 }

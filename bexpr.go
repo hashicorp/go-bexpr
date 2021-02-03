@@ -13,7 +13,8 @@ import (
 
 type Evaluator struct {
 	// The syntax tree
-	ast grammar.Expression
+	ast     grammar.Expression
+	tagName string
 }
 
 func CreateEvaluator(expression string, opts ...Option) (*Evaluator, error) {
@@ -29,12 +30,13 @@ func CreateEvaluator(expression string, opts ...Option) (*Evaluator, error) {
 	}
 
 	eval := &Evaluator{
-		ast: ast.(grammar.Expression),
+		ast:     ast.(grammar.Expression),
+		tagName: parsedOpts.withTagName,
 	}
 
 	return eval, nil
 }
 
 func (eval *Evaluator) Evaluate(datum interface{}) (bool, error) {
-	return evaluate(eval.ast, datum)
+	return evaluate(eval.ast, datum, WithTagName(eval.tagName))
 }

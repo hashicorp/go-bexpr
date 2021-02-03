@@ -307,6 +307,73 @@ func TestEvaluate(t *testing.T) {
 	}
 }
 
+func TestCustomTag(t *testing.T) {
+	t.Parallel()
+
+	type testStruct struct {
+		BexprName string `bexpr:"bname"`
+		JsonName  string `json:"jname"`
+	}
+	ts := testStruct{BexprName: "foo", JsonName: "bar"}
+
+	cases := []struct {
+		name       string
+		expression string
+		jsonTag    bool
+		bnameFound bool
+		jnameFound bool
+	}{
+		{
+			name:       "bexpr tag, bname",
+			expression: `"/bname" == "foo"`,
+			bnameFound: true,
+		},
+		{
+			name:       "bexpr tag, jname",
+			expression: `"/jname" == "bar"`,
+		},
+		{
+			name:       "json tag, bname",
+			expression: `"/bname" == "foo"`,
+			jsonTag:    true,
+		},
+		{
+			name:       "json tag, jname",
+			expression: `"/jname" == "bar"`,
+			jsonTag:    true,
+			jnameFound: true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var opts []Option
+			if tc.jsonTag {
+				opts = append(opts, WithTagName("json"))
+			}
+			expr, err := CreateEvaluator(tc.expression, opts...)
+			require.NoError(t, err)
+
+			match, err := expr.Evaluate(ts)
+			if tc.jsonTag {
+				if tc.jnameFound {
+					require.NoError(t, err)
+					require.True(t, match)
+				} else {
+					require.Contains(t, err.Error(), "couldn't find struct field")
+				}
+			} else {
+				if tc.bnameFound {
+					require.NoError(t, err)
+					require.True(t, match)
+				} else {
+					require.Contains(t, err.Error(), "couldn't find struct field")
+				}
+			}
+		})
+	}
+}
+
 func BenchmarkEvaluate(b *testing.B) {
 	for name, tcase := range evaluateTests {
 		// capture these values in the closure
