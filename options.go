@@ -18,6 +18,7 @@ type Option func(*options)
 type options struct {
 	withMaxExpressions uint64
 	withTagName        string
+	withHookFn         HookFn
 }
 
 func WithMaxExpressions(maxExprCnt uint64) Option {
@@ -30,6 +31,16 @@ func WithMaxExpressions(maxExprCnt uint64) Option {
 func WithTagName(tagName string) Option {
 	return func(o *options) {
 		o.withTagName = tagName
+	}
+}
+
+// WithHookFn sets a HookFn to be called on the go data under evaluation
+// and all subfields, indexes, and values recursively.  That makes it
+// easier for the json pointer to not match exactly the go value being
+// evaluated (for example, when using protocol buffers' well known types).
+func WithHookFn(fn HookFn) Option {
+	return func(o *options) {
+		o.withHookFn = fn
 	}
 }
 

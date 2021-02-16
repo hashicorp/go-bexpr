@@ -9,12 +9,19 @@ package bexpr
 
 import (
 	"github.com/hashicorp/go-bexpr/grammar"
+	"github.com/mitchellh/pointerstructure"
 )
+
+// HookFn provides a way to translate 1 reflect.Value to another to facilitate
+// making go structures appear in a way that matches the expected jsonpointers
+// used for evaluation.
+type HookFn pointerstructure.GetValueHookFn
 
 type Evaluator struct {
 	// The syntax tree
 	ast     grammar.Expression
 	tagName string
+	hook    HookFn
 }
 
 func CreateEvaluator(expression string, opts ...Option) (*Evaluator, error) {
@@ -32,11 +39,12 @@ func CreateEvaluator(expression string, opts ...Option) (*Evaluator, error) {
 	eval := &Evaluator{
 		ast:     ast.(grammar.Expression),
 		tagName: parsedOpts.withTagName,
+		hook:    parsedOpts.withHookFn,
 	}
 
 	return eval, nil
 }
 
 func (eval *Evaluator) Evaluate(datum interface{}) (bool, error) {
-	return evaluate(eval.ast, datum, WithTagName(eval.tagName))
+	return evaluate(eval.ast, datum, WithTagName(eval.tagName), WithHookFn(eval.hook))
 }

@@ -2,6 +2,7 @@ package bexpr
 
 import (
 	"fmt"
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -12,6 +13,7 @@ type expressionCheck struct {
 	result     bool
 	err        string
 	benchQuick bool
+	hook       HookFn
 }
 
 type expressionTest struct {
@@ -41,6 +43,7 @@ var evaluateTests map[string]expressionTest = map[string]expressionTest{
 		},
 		[]expressionCheck{
 			{expression: "Int == -1", result: true, benchQuick: true},
+			{expression: "Int == `foo`", result: true, hook: func(reflect.Value) reflect.Value { return reflect.ValueOf("foo") }},
 			{expression: "Int == -99", result: false, benchQuick: true},
 			{expression: "Int != -1", result: false},
 			{expression: "Int != -99", result: true},
@@ -96,6 +99,7 @@ var evaluateTests map[string]expressionTest = map[string]expressionTest{
 			{expression: "String == `not-it`", result: false, benchQuick: true},
 			{expression: "String != `exported`", result: false},
 			{expression: "String != `not-it`", result: true},
+			{expression: "String != `not-it`", result: false, hook: func(value reflect.Value) reflect.Value { return reflect.ValueOf("not-it") }},
 			{expression: "port in String", result: true, benchQuick: true},
 			{expression: "part in String", result: false},
 			{expression: "port not in String", result: false},
@@ -196,6 +200,12 @@ var evaluateTests map[string]expressionTest = map[string]expressionTest{
 			"abc": nil,
 		},
 		[]expressionCheck{
+			{expression: "foo == true", result: true, hook: func(v reflect.Value) reflect.Value {
+				if r := v.MapIndex(reflect.ValueOf("bar")); !r.IsZero() {
+					return r
+				}
+				return v
+			}},
 			{expression: "bar in foo", result: true},
 			{expression: "arg in foo", result: false},
 			{expression: "arg not in foo", result: true},
@@ -252,6 +262,12 @@ var evaluateTests map[string]expressionTest = map[string]expressionTest{
 			TopInt: 5,
 		},
 		[]expressionCheck{
+			{expression: "Nested.Map == bar", result: true, benchQuick: true, hook: func(v reflect.Value) reflect.Value {
+				if r, ok := v.Interface().(map[string]string); ok {
+					return reflect.ValueOf(r["foo"])
+				}
+				return v
+			}},
 			{expression: "Nested.Map.foo == bar", result: true, benchQuick: true},
 			{expression: "Nested.Map.foo contains ba", result: true, benchQuick: true},
 			{expression: "Nested.Map.foo == baz", result: false},
@@ -290,7 +306,7 @@ func TestEvaluate(t *testing.T) {
 				t.Run(fmt.Sprintf("#%d - %s", i, expTest.expression), func(t *testing.T) {
 					t.Parallel()
 
-					expr, err := CreateEvaluator(expTest.expression)
+					expr, err := CreateEvaluator(expTest.expression, WithHookFn(expTest.hook))
 					require.NoError(t, err)
 
 					match, err := expr.Evaluate(tcase.value)
@@ -302,6 +318,72 @@ func TestEvaluate(t *testing.T) {
 					}
 					require.Equal(t, expTest.result, match)
 				})
+			}
+		})
+	}
+}
+
+func TestWithHookFn(t *testing.T) {
+	t.Parallel()
+	type testStruct struct {
+		I interface{}
+		S *testStruct
+	}
+	cases := []struct {
+		name string
+		hook HookFn
+		in   *testStruct
+		eval []expressionCheck
+	}{
+		{
+			name: "simple",
+			hook: func(v reflect.Value) reflect.Value { return v },
+			in:   &testStruct{I: "foo"},
+			eval: []expressionCheck{
+				{expression: `"/I"=="foo"`, result: true},
+			},
+		},
+		{
+			name: "dive to pointer",
+			hook: func(v reflect.Value) reflect.Value {
+				if r, ok := v.Interface().(*testStruct); ok {
+					return reflect.ValueOf(r.I)
+				}
+				return v
+			},
+			in: &testStruct{S: &testStruct{I: "foo"}, I: &testStruct{I: &testStruct{I: "bar"}}},
+			eval: []expressionCheck{
+				{expression: `"/S"=="foo"`, result: true},
+				{expression: `"/I/I"=="bar"`, result: true},
+				{expression: `"/S/I"=="foo"`, result: false,
+					err: "error finding value in datum: /S/I: at part 1, invalid value kind: string"},
+			},
+		},
+		{
+			name: "hook returns nil interface{}",
+			hook: func(v reflect.Value) reflect.Value { return reflect.ValueOf(nil) },
+			in:   &testStruct{I: "foo"},
+			eval: []expressionCheck{
+				{expression: `"/I"=="foo"`, result: false,
+					err: "error finding value in datum: /I at part 0: GetHook returned the value of a nil interface"},
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			for _, eval := range tc.eval {
+				expr, err := CreateEvaluator(eval.expression, WithHookFn(tc.hook))
+				require.NoError(t, err)
+
+				match, err := expr.Evaluate(tc.in)
+				if eval.err != "" {
+					require.Error(t, err)
+					require.Equal(t, eval.err, err.Error())
+				} else {
+					require.NoError(t, err)
+				}
+				require.Equal(t, eval.result, match)
 			}
 		})
 	}

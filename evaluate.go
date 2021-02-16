@@ -180,6 +180,7 @@ func evaluateMatchExpression(expression *grammar.MatchExpression, datum interfac
 		Parts: expression.Selector.Path,
 		Config: pointerstructure.Config{
 			TagName: opts.withTagName,
+			GetHook: pointerstructure.GetValueHookFn(opts.withHookFn),
 		},
 	}
 	val, err := ptr.Get(datum)
