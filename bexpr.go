@@ -12,9 +12,11 @@ import (
 	"github.com/mitchellh/pointerstructure"
 )
 
-// HookFn provides a way to translate 1 reflect.Value to another to facilitate
-// making go structures appear in a way that matches the expected jsonpointers
-// used for evaluation.
+// HookFn provides a way to translate 1 reflect.Value to another during
+// evaluation by the bexpr evluator.  This facilitate making go structures
+// appear in a way that matches the expected jsonpointers used for evaluation.
+// This is helpful, for example, when working with protocol buffers' well
+// known types.
 type HookFn pointerstructure.GetValueHookFn
 
 type Evaluator struct {
