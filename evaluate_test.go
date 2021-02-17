@@ -13,7 +13,7 @@ type expressionCheck struct {
 	result     bool
 	err        string
 	benchQuick bool
-	hook       HookFn
+	hook       ValueTransformationHookFn
 }
 
 type expressionTest struct {
@@ -331,7 +331,7 @@ func TestWithHookFn(t *testing.T) {
 	}
 	cases := []struct {
 		name string
-		hook HookFn
+		hook ValueTransformationHookFn
 		in   *testStruct
 		eval []expressionCheck
 	}{
@@ -360,12 +360,12 @@ func TestWithHookFn(t *testing.T) {
 			},
 		},
 		{
-			name: "hook returns nil interface{}",
+			name: "valueTransformationHook returns nil interface{}",
 			hook: func(v reflect.Value) reflect.Value { return reflect.ValueOf(nil) },
 			in:   &testStruct{I: "foo"},
 			eval: []expressionCheck{
 				{expression: `"/I"=="foo"`, result: false,
-					err: "error finding value in datum: /I at part 0: GetHook returned the value of a nil interface"},
+					err: "error finding value in datum: /I at part 0: ValueTransformationHook returned the value of a nil interface"},
 			},
 		},
 	}

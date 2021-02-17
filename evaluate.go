@@ -179,8 +179,8 @@ func evaluateMatchExpression(expression *grammar.MatchExpression, datum interfac
 	ptr := pointerstructure.Pointer{
 		Parts: expression.Selector.Path,
 		Config: pointerstructure.Config{
-			TagName: opts.withTagName,
-			GetHook: pointerstructure.GetValueHookFn(opts.withHookFn),
+			TagName:                 opts.withTagName,
+			ValueTransformationHook: pointerstructure.ValueTransformationHookFn(opts.withHookFn),
 		},
 	}
 	val, err := ptr.Get(datum)
