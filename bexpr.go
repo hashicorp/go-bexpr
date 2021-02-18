@@ -9,12 +9,20 @@ package bexpr
 
 import (
 	"github.com/hashicorp/go-bexpr/grammar"
+	"github.com/mitchellh/pointerstructure"
 )
+
+// HookFn provides a way to translate 1 reflect.Value to another during
+// evaluation by bexpr.  This facilitate making go structures appear in a way
+// that matches the expected JSON Pointers used for evaluation. This is
+// helpful, for example, when working with protocol buffers' well-known types.
+type ValueTransformationHookFn = pointerstructure.ValueTransformationHookFn
 
 type Evaluator struct {
 	// The syntax tree
-	ast     grammar.Expression
-	tagName string
+	ast                     grammar.Expression
+	tagName                 string
+	valueTransformationHook ValueTransformationHookFn
 }
 
 func CreateEvaluator(expression string, opts ...Option) (*Evaluator, error) {
@@ -30,13 +38,14 @@ func CreateEvaluator(expression string, opts ...Option) (*Evaluator, error) {
 	}
 
 	eval := &Evaluator{
-		ast:     ast.(grammar.Expression),
-		tagName: parsedOpts.withTagName,
+		ast:                     ast.(grammar.Expression),
+		tagName:                 parsedOpts.withTagName,
+		valueTransformationHook: parsedOpts.withHookFn,
 	}
 
 	return eval, nil
 }
 
 func (eval *Evaluator) Evaluate(datum interface{}) (bool, error) {
-	return evaluate(eval.ast, datum, WithTagName(eval.tagName))
+	return evaluate(eval.ast, datum, WithTagName(eval.tagName), WithHookFn(eval.valueTransformationHook))
 }
