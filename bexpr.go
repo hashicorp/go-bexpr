@@ -16,7 +16,7 @@ import (
 // evaluation by bexpr.  This facilitate making go structures appear in a way
 // that matches the expected JSON Pointers used for evaluation. This is
 // helpful, for example, when working with protocol buffers' well-known types.
-type ValueTransformationHookFn pointerstructure.ValueTransformationHookFn
+type ValueTransformationHookFn = pointerstructure.ValueTransformationHookFn
 
 type Evaluator struct {
 	// The syntax tree
