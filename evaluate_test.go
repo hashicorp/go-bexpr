@@ -258,6 +258,7 @@ var evaluateTests map[string]expressionTest = map[string]expressionTest{
 						z: 10,
 					},
 				},
+				SliceOfInfs: []interface{}{"foobar", 1, true},
 			},
 			TopInt: 5,
 		},
@@ -287,6 +288,10 @@ var evaluateTests map[string]expressionTest = map[string]expressionTest{
 			{expression: "Nested.SliceOfStructs.0.Y == 4", result: false},
 			{expression: "Nested.Map.notfound == 4", result: false, err: `error finding value in datum: /Nested/Map/notfound at part 2: couldn't find key "notfound"`},
 			{expression: "Map in Nested", result: false, err: "Cannot perform in/contains operations on type struct for selector: \"Nested\""},
+			{expression: `"foobar" in "/Nested/SliceOfInfs"`, result: true},
+			{expression: `"1" in "/Nested/SliceOfInfs"`, result: true},
+			{expression: `"2" in "/Nested/SliceOfInfs"`, result: false},
+			{expression: `"true" in "/Nested/SliceOfInfs"`, result: true},
 		},
 	},
 }
@@ -355,8 +360,10 @@ func TestWithHookFn(t *testing.T) {
 			eval: []expressionCheck{
 				{expression: `"/S"=="foo"`, result: true},
 				{expression: `"/I/I"=="bar"`, result: true},
-				{expression: `"/S/I"=="foo"`, result: false,
-					err: "error finding value in datum: /S/I: at part 1, invalid value kind: string"},
+				{
+					expression: `"/S/I"=="foo"`, result: false,
+					err: "error finding value in datum: /S/I: at part 1, invalid value kind: string",
+				},
 			},
 		},
 		{
@@ -364,8 +371,10 @@ func TestWithHookFn(t *testing.T) {
 			hook: func(v reflect.Value) reflect.Value { return reflect.ValueOf(nil) },
 			in:   &testStruct{I: "foo"},
 			eval: []expressionCheck{
-				{expression: `"/I"=="foo"`, result: false,
-					err: "error finding value in datum: /I at part 0: ValueTransformationHook returned the value of a nil interface"},
+				{
+					expression: `"/I"=="foo"`, result: false,
+					err: "error finding value in datum: /I at part 0: ValueTransformationHook returned the value of a nil interface",
+				},
 			},
 		},
 	}

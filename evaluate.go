@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/hashicorp/go-bexpr/grammar"
@@ -113,27 +114,65 @@ func doMatchIn(expression *grammar.MatchExpression, value reflect.Value) (bool, 
 
 	case reflect.Slice, reflect.Array:
 		itemType := derefType(value.Type().Elem())
-		// Once we know the item type, we need to re-derive the match value for
-		// equality assertion
-		matchValue, err = getMatchExprValue(expression, itemType.Kind())
-		if err != nil {
-			return false, fmt.Errorf("error getting match value in expression: %w", err)
-		}
-		eqFn := primitiveEqualityFn(itemType.Kind())
-		if eqFn == nil {
-			return false, errors.New(`unable to find suitable primitive comparison function for "in" comparison`)
-		}
-
-		for i := 0; i < value.Len(); i++ {
-			item := value.Index(i)
-
-			// the value will be the correct type as we verified the itemType
-			if eqFn(matchValue, reflect.Indirect(item)) {
-				return true, nil
+		kind := itemType.Kind()
+		switch kind {
+		case reflect.Interface:
+			// If it's an interface, that is, the type was []interface{}, we
+			// have to treat each element individually, checking each element's
+			// type/kind and rederiving the match value.
+			for i := 0; i < value.Len(); i++ {
+				item := value.Index(i).Elem()
+				itemType := derefType(item.Type())
+				kind := itemType.Kind()
+				// We need to special case errors here. The reason is that in an
+				// interface slice there can be a mix/match of types, but the
+				// coerce functions expect a certain type. So the expression
+				// passed in might be `"true" in "/my/slice"` but the value it's
+				// checking against might be an integer, thus it will try to
+				// coerce "true" to an integer and fail. However, all of the
+				// functions use strconv which has a specific error type for
+				// syntax errors, so as a special case in this situation, don't
+				// error on a strconv.ErrSyntax, just continue on to the next
+				// element.
+				matchValue, err = getMatchExprValue(expression, kind)
+				if err != nil {
+					if errors.Is(err, strconv.ErrSyntax) {
+						continue
+					}
+					return false, errors.New(`error getting interface slice match value in expression`)
+				}
+				eqFn := primitiveEqualityFn(kind)
+				if eqFn == nil {
+					return false, fmt.Errorf(`unable to find suitable primitive comparison function for "in" comparison in interface slice: %s`, kind)
+				}
+				// the value will be the correct type as we verified the itemType
+				if eqFn(matchValue, reflect.Indirect(item)) {
+					return true, nil
+				}
 			}
-		}
+			return false, nil
 
-		return false, nil
+		default:
+			// Otherwise it's a concrete type and we can essentially cache the
+			// answers. First we need to re-derive the match value for equality
+			// assertion.
+			matchValue, err = getMatchExprValue(expression, kind)
+			if err != nil {
+				return false, fmt.Errorf("error getting match value in expression: %w", err)
+			}
+			eqFn := primitiveEqualityFn(kind)
+			if eqFn == nil {
+				return false, errors.New(`unable to find suitable primitive comparison function for "in" comparison`)
+			}
+			for i := 0; i < value.Len(); i++ {
+				item := value.Index(i)
+				// the value will be the correct type as we verified the itemType
+				if eqFn(matchValue, reflect.Indirect(item)) {
+					return true, nil
+				}
+			}
+			return false, nil
+		}
 
 	case reflect.String:
 		return strings.Contains(value.String(), matchValue.(string)), nil

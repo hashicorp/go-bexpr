@@ -30,20 +30,22 @@ type testFlatStruct struct {
 	Hidden     bool `bexpr:"-"`
 }
 
-type CustomInt int
-type CustomInt8 int8
-type CustomInt16 int16
-type CustomInt32 int32
-type CustomInt64 int64
-type CustomUint uint
-type CustomUint8 uint8
-type CustomUint16 uint16
-type CustomUint32 uint32
-type CustomUint64 uint64
-type CustomFloat32 float32
-type CustomFloat64 float64
-type CustomBool bool
-type CustomString string
+type (
+	CustomInt     int
+	CustomInt8    int8
+	CustomInt16   int16
+	CustomInt32   int32
+	CustomInt64   int64
+	CustomUint    uint
+	CustomUint8   uint8
+	CustomUint16  uint16
+	CustomUint32  uint32
+	CustomUint64  uint64
+	CustomFloat32 float32
+	CustomFloat64 float64
+	CustomBool    bool
+	CustomString  string
+)
 
 type testFlatStructAlt struct {
 	Int        CustomInt
@@ -100,6 +102,7 @@ type testNestedLevel1 struct {
 	SliceOfInts      []int
 	SliceOfStructs   []testNestedLevel2_2
 	SliceOfMapInfInf []map[interface{}]interface{}
+	SliceOfInfs      []interface{}
 }
 
 type testNestedTypes struct {
