@@ -24,22 +24,23 @@ type expressionTest struct {
 var evaluateTests map[string]expressionTest = map[string]expressionTest{
 	"Flat Struct": {
 		testFlatStruct{
-			Int:        -1,
-			Int8:       -2,
-			Int16:      -3,
-			Int32:      -4,
-			Int64:      -5,
-			Uint:       6,
-			Uint8:      7,
-			Uint16:     8,
-			Uint32:     9,
-			Uint64:     10,
-			Float32:    1.1,
-			Float64:    1.2,
-			Bool:       true,
-			String:     "exported",
-			unexported: "unexported",
-			Hidden:     true,
+			Int:         -1,
+			Int8:        -2,
+			Int16:       -3,
+			Int32:       -4,
+			Int64:       -5,
+			Uint:        6,
+			Uint8:       7,
+			Uint16:      8,
+			Uint32:      9,
+			Uint64:      10,
+			Float32:     1.1,
+			Float64:     1.2,
+			Bool:        true,
+			String:      "exported",
+			ColonString: "expo:rted",
+			unexported:  "unexported",
+			Hidden:      true,
 		},
 		[]expressionCheck{
 			{expression: "Int == -1", result: true, benchQuick: true},
@@ -104,6 +105,8 @@ var evaluateTests map[string]expressionTest = map[string]expressionTest{
 			{expression: "part in String", result: false},
 			{expression: "port not in String", result: false},
 			{expression: "part not in String", result: true},
+			{expression: "ColonString == `expo:rted`", result: true},
+			{expression: "ColonString != `expor:ted`", result: true},
 			{expression: "unexported == `unexported`", result: false, err: `error finding value in datum: /unexported at part 0: couldn't find struct field with name "unexported"`},
 			{expression: "Hidden == false", result: false, err: "error finding value in datum: /Hidden at part 0: struct field \"Hidden\" is ignored and cannot be used"},
 			{expression: "String matches 	`^ex.*`", result: true, benchQuick: true},
@@ -198,6 +201,9 @@ var evaluateTests map[string]expressionTest = map[string]expressionTest{
 				"baz": false,
 			},
 			"abc": nil,
+			"co:lon": {
+				"bar": true,
+			},
 		},
 		[]expressionCheck{
 			{expression: "foo == true", result: true, hook: func(v reflect.Value) reflect.Value {
@@ -207,6 +213,7 @@ var evaluateTests map[string]expressionTest = map[string]expressionTest{
 				return v
 			}},
 			{expression: "bar in foo", result: true},
+			{expression: `bar in "/co:lon"`, result: true},
 			{expression: "arg in foo", result: false},
 			{expression: "arg not in foo", result: true},
 			{expression: "baz not in foo", result: false},
@@ -231,9 +238,11 @@ var evaluateTests map[string]expressionTest = map[string]expressionTest{
 		testNestedTypes{
 			Nested: testNestedLevel1{
 				Map: map[string]string{
-					"foo": "bar",
-					"bar": "baz",
-					"abc": "123",
+					"foo":    "bar",
+					"bar":    "baz",
+					"abc":    "123",
+					"colon":  "co:lon",
+					"co:lon": "co:lon",
 				},
 				MapOfStructs: map[string]testNestedLevel2_1{
 					"one": {
@@ -275,6 +284,8 @@ var evaluateTests map[string]expressionTest = map[string]expressionTest{
 			{expression: "Nested.Map is not empty", result: true},
 			{expression: "Nested.Map is not empty", result: true},
 			{expression: "Nested.Map contains foo and Nested.Map contains bar", result: true, benchQuick: true},
+			{expression: `Nested.Map.colon == "co:lon"`, result: true},
+			{expression: `"/Nested/Map/co:lon" == "co:lon"`, result: true},
 			{expression: "Nested.Map contains nope", result: false},
 			{expression: "Nested.Map contains bar", result: true},
 			{expression: "Nested.Map.bar == `bazel`", result: false, benchQuick: true},

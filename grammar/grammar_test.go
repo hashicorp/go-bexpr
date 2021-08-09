@@ -26,8 +26,8 @@ func TestExpressionParsing(t *testing.T) {
 			err:      "",
 		},
 		"Match Equality, JSON Pointer, with punctuation": {
-			input:    `"/hy-phen/under_score/pi|pe/do.t/ti~lde" == 3`,
-			expected: &MatchExpression{Selector: Selector{Type: SelectorTypeJsonPointer, Path: []string{"hy-phen", "under_score", "pi|pe", "do.t", "ti~lde"}}, Operator: MatchEqual, Value: &MatchValue{Raw: "3"}},
+			input:    `"/hy-phen/under_score/pi|pe/do.t/ti~lde/co:lon" == 3`,
+			expected: &MatchExpression{Selector: Selector{Type: SelectorTypeJsonPointer, Path: []string{"hy-phen", "under_score", "pi|pe", "do.t", "ti~lde", "co:lon"}}, Operator: MatchEqual, Value: &MatchValue{Raw: "3"}},
 			err:      "",
 		},
 		"Match Equality, JSON Pointer, with punctuation, trailing slash": {

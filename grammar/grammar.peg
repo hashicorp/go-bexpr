@@ -137,7 +137,7 @@ Selector "selector" <- first:Identifier rest:SelectorOrIndex* {
    return sel, nil
 }
 
-JsonPointerSegment <- '/' ident:[\pL\pN-_.~|]+ {
+JsonPointerSegment <- '/' ident:[\pL\pN-_.~:|]+ {
    return string(c.text)[1:], nil
 }
 
