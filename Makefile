@@ -18,26 +18,25 @@ TEST_VERBOSE_ARG=
 endif
 
 TEST_RESULTS?="/tmp/test-results"
-grammar/grammar.go: grammar/grammar.peg
+
+generate:
 	@echo "Regenerating Parser"
 	@go generate ./
 
-generate: grammar/grammar.go
-
-test: generate
+test:
 	@go test $(TEST_VERBOSE_ARG) $(GOTEST_PKGS)
 
-test-ci: generate
+test-ci:
 	@gotestsum --junitfile $(TEST_RESULTS)/gotestsum-report.xml -- $(GOTEST_PKGS)
 
-bench: generate
+bench:
 	@go test $(TEST_VERBOSE_ARG) -run DONTRUNTESTS -bench $(BENCHTESTS) $(BENCHFULL_ARG) -benchtime=$(BENCHTIME) $(GOTEST_PKGS)
 
-coverage: generate
+coverage:
 	@go test -coverprofile /tmp/coverage.out $(GOTEST_PKGS)
 	@go tool cover -html /tmp/coverage.out
 
-fmt: generate
+fmt:
 	@gofmt -w -s
 
 examples: simple expr-parse expr-eval filter
