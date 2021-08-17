@@ -35,6 +35,11 @@ func TestExpressionParsing(t *testing.T) {
 			expected: nil,
 			err:      "1:43 (42): no match found, expected: \"in\", \"not\" or [ \\t\\r\\n]",
 		},
+		"Match Equality with forward slash in identifier": {
+			input:    "foo/bar == 3",
+			expected: &MatchExpression{Selector: Selector{Type: SelectorTypeBexpr, Path: []string{"foo/bar"}}, Operator: MatchEqual, Value: &MatchValue{Raw: "3"}},
+			err:      "",
+		},
 		"Match Inequality": {
 			input:    "foo != xyz",
 			expected: &MatchExpression{Selector: Selector{Type: SelectorTypeBexpr, Path: []string{"foo"}}, Operator: MatchNotEqual, Value: &MatchValue{Raw: "xyz"}},
