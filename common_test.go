@@ -27,6 +27,7 @@ type testFlatStruct struct {
 	Bool        bool
 	String      string
 	ColonString string
+	Slash       string `bexpr:"slash/value"`
 	unexported  string
 	Hidden      bool `bexpr:"-"`
 }
