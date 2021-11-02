@@ -224,7 +224,14 @@ func evaluateMatchExpression(expression *grammar.MatchExpression, datum interfac
 	}
 	val, err := ptr.Get(datum)
 	if err != nil {
-		return false, fmt.Errorf("error finding value in datum: %w", err)
+		if errors.Is(err, pointerstructure.ErrNotFound) && opts.withUnknown != nil {
+			err = nil
+			val = *opts.withUnknown
+		}
+
+		if err != nil {
+			return false, fmt.Errorf("error finding value in datum: %w", err)
+		}
 	}
 
 	if jn, ok := val.(json.Number); ok {

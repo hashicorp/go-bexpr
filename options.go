@@ -19,6 +19,7 @@ type options struct {
 	withMaxExpressions uint64
 	withTagName        string
 	withHookFn         ValueTransformationHookFn
+	withUnknown        *interface{}
 }
 
 func WithMaxExpressions(maxExprCnt uint64) Option {
@@ -44,9 +45,20 @@ func WithHookFn(fn ValueTransformationHookFn) Option {
 	}
 }
 
+// WithUnknownValue sets a value that is used for any unknown keys. Normally,
+// bexpr will error on any expressions with unknown keys. This can be set to
+// instead use a specificed value whenever an unknown key is found. For example,
+// this might be set to the empty string "".
+func WithUnknownValue(val interface{}) Option {
+	return func(o *options) {
+		o.withUnknown = &val
+	}
+}
+
 func getDefaultOptions() options {
 	return options{
 		withMaxExpressions: 0,
 		withTagName:        "bexpr",
+		withUnknown:        nil,
 	}
 }

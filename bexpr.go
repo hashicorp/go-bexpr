@@ -23,6 +23,7 @@ type Evaluator struct {
 	ast                     grammar.Expression
 	tagName                 string
 	valueTransformationHook ValueTransformationHookFn
+	unknownVal              *interface{}
 }
 
 func CreateEvaluator(expression string, opts ...Option) (*Evaluator, error) {
@@ -41,11 +42,20 @@ func CreateEvaluator(expression string, opts ...Option) (*Evaluator, error) {
 		ast:                     ast.(grammar.Expression),
 		tagName:                 parsedOpts.withTagName,
 		valueTransformationHook: parsedOpts.withHookFn,
+		unknownVal:              parsedOpts.withUnknown,
 	}
 
 	return eval, nil
 }
 
 func (eval *Evaluator) Evaluate(datum interface{}) (bool, error) {
-	return evaluate(eval.ast, datum, WithTagName(eval.tagName), WithHookFn(eval.valueTransformationHook))
+	opts := []Option{
+		WithTagName(eval.tagName),
+		WithHookFn(eval.valueTransformationHook),
+	}
+	if eval.unknownVal != nil {
+		opts = append(opts, WithUnknownValue(*eval.unknownVal))
+	}
+
+	return evaluate(eval.ast, datum, opts...)
 }
