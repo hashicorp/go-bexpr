@@ -1,10 +1,12 @@
 package bexpr
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"testing"
 
+	"github.com/mitchellh/pointerstructure"
 	"github.com/stretchr/testify/require"
 )
 
@@ -109,7 +111,7 @@ var evaluateTests map[string]expressionTest = map[string]expressionTest{
 			{expression: "ColonString == `expo:rted`", result: true},
 			{expression: "ColonString != `expor:ted`", result: true},
 			{expression: "slash/value == `hello`", result: true},
-			{expression: "unexported == `unexported`", result: false, err: `error finding value in datum: /unexported at part 0: couldn't find struct field with name "unexported"`},
+			{expression: "unexported == `unexported`", result: false, err: `error finding value in datum: /unexported at part 0: couldn't find key: struct field with name "unexported"`},
 			{expression: "Hidden == false", result: false, err: "error finding value in datum: /Hidden at part 0: struct field \"Hidden\" is ignored and cannot be used"},
 			{expression: "String matches 	`^ex.*`", result: true, benchQuick: true},
 			{expression: "String not matches `^anchored.*`", result: true, benchQuick: true},
@@ -192,7 +194,7 @@ var evaluateTests map[string]expressionTest = map[string]expressionTest{
 			{expression: "String == `not-it`", result: false, benchQuick: true},
 			{expression: "String != `exported`", result: false},
 			{expression: "String != `not-it`", result: true},
-			{expression: "unexported == `unexported`", result: false, err: `error finding value in datum: /unexported at part 0: couldn't find struct field with name "unexported"`},
+			{expression: "unexported == `unexported`", result: false, err: `error finding value in datum: /unexported at part 0: couldn't find key: struct field with name "unexported"`},
 			{expression: "Hidden == false", result: false, err: "error finding value in datum: /Hidden at part 0: struct field \"Hidden\" is ignored and cannot be used"},
 		},
 	},
@@ -411,6 +413,106 @@ func TestWithHookFn(t *testing.T) {
 	}
 }
 
+func TestUnknownVal(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name       string
+		expression string
+		unknownVal interface{}
+		result     bool
+		err        string
+	}{
+		{
+			name:       "key exists",
+			expression: `key == "foo"`,
+			unknownVal: "bar",
+			result:     true,
+		},
+		{
+			name:       "key does not exist",
+			expression: `unknown == "bar"`,
+			unknownVal: "bar",
+			result:     true,
+		},
+		{
+			name:       "key does not exist (fail)",
+			expression: `unknown == "qux"`,
+			unknownVal: "bar",
+			result:     false,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			expr, err := CreateEvaluator(tc.expression, WithUnknownValue(tc.unknownVal))
+			require.NoError(t, err)
+
+			match, err := expr.Evaluate(map[string]string{
+				"key": "foo",
+			})
+			if tc.err != "" {
+				require.Error(t, err)
+				require.EqualError(t, err, tc.err)
+			} else {
+				require.NoError(t, err)
+			}
+			require.Equal(t, tc.result, match)
+		})
+	}
+}
+
+func TestUnknownVal_struct(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name       string
+		expression string
+		unknownVal interface{}
+		result     bool
+		err        string
+	}{
+		{
+			name:       "key exists",
+			expression: `key == "foo"`,
+			unknownVal: "bar",
+			result:     true,
+		},
+		{
+			name:       "key does not exist",
+			expression: `unknown == "bar"`,
+			unknownVal: "bar",
+			result:     true,
+		},
+		{
+			name:       "key does not exist (fail)",
+			expression: `unknown == "qux"`,
+			unknownVal: "bar",
+			result:     false,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			expr, err := CreateEvaluator(tc.expression, WithUnknownValue(tc.unknownVal))
+			require.NoError(t, err)
+
+			match, err := expr.Evaluate(struct {
+				Key string `bexpr:"key"`
+			}{
+				Key: "foo",
+			})
+			if tc.err != "" {
+				require.Error(t, err)
+				require.EqualError(t, err, tc.err)
+			} else {
+				require.NoError(t, err)
+			}
+			require.Equal(t, tc.result, match)
+		})
+	}
+}
+
 func TestCustomTag(t *testing.T) {
 	t.Parallel()
 
@@ -464,14 +566,14 @@ func TestCustomTag(t *testing.T) {
 					require.NoError(t, err)
 					require.True(t, match)
 				} else {
-					require.Contains(t, err.Error(), "couldn't find struct field")
+					require.True(t, errors.Is(err, pointerstructure.ErrNotFound))
 				}
 			} else {
 				if tc.bnameFound {
 					require.NoError(t, err)
 					require.True(t, match)
 				} else {
-					require.Contains(t, err.Error(), "couldn't find struct field")
+					require.True(t, errors.Is(err, pointerstructure.ErrNotFound))
 				}
 			}
 		})
