@@ -247,6 +247,7 @@ var evaluateTests map[string]expressionTest = map[string]expressionTest{
 					"abc":    "123",
 					"colon":  "co:lon",
 					"co:lon": "co:lon",
+					"email":  "foo@example.com",
 				},
 				MapOfStructs: map[string]testNestedLevel2_1{
 					"one": {
@@ -307,6 +308,7 @@ var evaluateTests map[string]expressionTest = map[string]expressionTest{
 			{expression: `"1" in "/Nested/SliceOfInfs"`, result: true},
 			{expression: `"2" in "/Nested/SliceOfInfs"`, result: false},
 			{expression: `"true" in "/Nested/SliceOfInfs"`, result: true},
+			{expression: `"/Nested/Map/email" matches "(foz|foo)@example.com"`, result: true},
 		},
 	},
 }
