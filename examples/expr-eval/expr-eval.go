@@ -45,69 +45,80 @@ var data Matchable = Matchable{
 		Values: []int{1, 2, 3, 4, 5},
 	},
 	SliceInternal: []Internal{
-		Internal{
+		{
 			Name:   "odd",
 			Values: []int{1, 3, 5, 7, 9},
 		},
-		Internal{
+		{
 			Name:   "even",
 			Values: []int{2, 4, 6, 8, 10},
 		},
-		Internal{
+		{
 			Name:   "fib",
 			Values: []int{0, 1, 1, 2, 3, 5},
 		},
 	},
 	MapInternal: map[string]Internal{
-		"odd": Internal{
+		"odd": {
 			Name:   "odd",
 			Values: []int{1, 3, 5, 7, 9},
 		},
-		"even": Internal{
+		"even": {
 			Name:   "even",
 			Values: []int{2, 4, 6, 8, 10},
 		},
-		"fib": Internal{
+		"fib": {
 			Name:   "fib",
 			Values: []int{0, 1, 1, 2, 3, 5},
 		},
 	},
 }
 
-var expressions []string = []string{
+type example struct {
+	expression string
+	variables  map[string]string
+}
+
+var examples []example = []example{
 	// should error out in creating the evaluator as Foo is not a valid selector
-	"Foo == 3",
+	{expression: "Foo == 3"},
 	// should error out because the field is hidden
-	"Internal.Hidden == 5",
+	{expression: "Internal.Hidden == 5"},
 	// should error out because the field is not exported
-	"Internal.unexported == 3",
+	{expression: "Internal.unexported == 3"},
 	// should evaluate to true
-	"Map[`abc`] == `def`",
+	{expression: "Map[`abc`] == `def`"},
 	// should evaluate to false
-	"X == 3",
+	{expression: "X == 3"},
 	// should evaluate to true
-	"Internal.fields is not empty",
+	{expression: "Internal.fields is not empty"},
 	// should evaluate to false
-	"MapInternal.fib.Name != fib",
+	{expression: "MapInternal.fib.Name != fib"},
 	// should evaluate to true
-	"odd in MapInternal",
+	{expression: "odd in MapInternal"},
+	// variable interpolation - should evaluate to true
+	{expression: "X == ${value}", variables: map[string]string{"value": "5"}},
+	// variable interpolation - should evaluate to false
+	{expression: "X == ${value}", variables: map[string]string{"value": "4"}},
+	// variable interpolation default value - should evaluate to false
+	{expression: "X == ${value}"},
 }
 
 func main() {
-	for _, expression := range expressions {
-		eval, err := bexpr.CreateEvaluator(expression)
+	for _, ex := range examples {
+		eval, err := bexpr.CreateEvaluator(ex.expression)
 
 		if err != nil {
-			fmt.Printf("Failed to create evaluator for expression %q: %v\n", expression, err)
+			fmt.Printf("Failed to create evaluator for expression %q: %v\n", ex.expression, err)
 			continue
 		}
 
-		result, err := eval.Evaluate(data)
+		result, err := eval.Evaluate(data, ex.variables)
 		if err != nil {
-			fmt.Printf("Failed to run evaluation of expression %q: %v\n", expression, err)
+			fmt.Printf("Failed to run evaluation of expression %q (variables %#v): %v\n", ex.expression, ex.variables, err)
 			continue
 		}
 
-		fmt.Printf("Result of expression %q evaluation: %t\n", expression, result)
+		fmt.Printf("Result of expression %q evaluation (variables: %#v): %t\n", ex.expression, ex.variables, result)
 	}
 }

@@ -53,7 +53,7 @@ func (f *Filter) Execute(data interface{}) (interface{}, error) {
 			if !item.CanInterface() {
 				return nil, fmt.Errorf("Slice/Array value can not be used")
 			}
-			result, err := f.evaluator.Evaluate(item.Interface())
+			result, err := f.evaluator.Evaluate(item.Interface(), nil)
 			if err != nil {
 				return nil, err
 			}
@@ -76,7 +76,7 @@ func (f *Filter) Execute(data interface{}) (interface{}, error) {
 				return nil, fmt.Errorf("Map value cannot be used")
 			}
 
-			result, err := f.evaluator.Evaluate(item.Interface())
+			result, err := f.evaluator.Evaluate(item.Interface(), nil)
 			if err != nil {
 				return nil, err
 			}

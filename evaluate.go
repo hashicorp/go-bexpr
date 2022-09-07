@@ -66,7 +66,7 @@ func derefType(rtype reflect.Type) reflect.Type {
 	return rtype
 }
 
-func doMatchMatches(expression *grammar.MatchExpression, value reflect.Value) (bool, error) {
+func doMatchMatches(expression *grammar.MatchExpression, value reflect.Value, variables map[string]string) (bool, error) {
 	if !value.Type().ConvertibleTo(byteSliceTyp) {
 		return false, fmt.Errorf("Value of type %s is not convertible to []byte", value.Type())
 	}
@@ -88,21 +88,21 @@ func doMatchMatches(expression *grammar.MatchExpression, value reflect.Value) (b
 	return re.Match(value.Convert(byteSliceTyp).Interface().([]byte)), nil
 }
 
-func doMatchEqual(expression *grammar.MatchExpression, value reflect.Value) (bool, error) {
+func doMatchEqual(expression *grammar.MatchExpression, value reflect.Value, variables map[string]string) (bool, error) {
 	// NOTE: see preconditions in evaluategrammar.MatchExpressionRecurse
 	eqFn := primitiveEqualityFn(value.Kind())
 	if eqFn == nil {
 		return false, errors.New("unable to find suitable primitive comparison function for matching")
 	}
-	matchValue, err := getMatchExprValue(expression, value.Kind())
+	matchValue, err := getMatchExprValue(expression, value.Type(), variables)
 	if err != nil {
 		return false, fmt.Errorf("error getting match value in expression: %w", err)
 	}
 	return eqFn(matchValue, value), nil
 }
 
-func doMatchIn(expression *grammar.MatchExpression, value reflect.Value) (bool, error) {
-	matchValue, err := getMatchExprValue(expression, value.Kind())
+func doMatchIn(expression *grammar.MatchExpression, value reflect.Value, variables map[string]string) (bool, error) {
+	matchValue, err := getMatchExprValue(expression, value.Type(), variables)
 	if err != nil {
 		return false, fmt.Errorf("error getting match value in expression: %w", err)
 	}
@@ -134,7 +134,7 @@ func doMatchIn(expression *grammar.MatchExpression, value reflect.Value) (bool, 
 				// syntax errors, so as a special case in this situation, don't
 				// error on a strconv.ErrSyntax, just continue on to the next
 				// element.
-				matchValue, err = getMatchExprValue(expression, kind)
+				matchValue, err = getMatchExprValue(expression, itemType, variables)
 				if err != nil {
 					if errors.Is(err, strconv.ErrSyntax) {
 						continue
@@ -156,7 +156,7 @@ func doMatchIn(expression *grammar.MatchExpression, value reflect.Value) (bool, 
 			// Otherwise it's a concrete type and we can essentially cache the
 			// answers. First we need to re-derive the match value for equality
 			// assertion.
-			matchValue, err = getMatchExprValue(expression, kind)
+			matchValue, err = getMatchExprValue(expression, itemType, variables)
 			if err != nil {
 				return false, fmt.Errorf("error getting match value in expression: %w", err)
 			}
@@ -187,29 +187,38 @@ func doMatchIsEmpty(matcher *grammar.MatchExpression, value reflect.Value) (bool
 	return value.Len() == 0, nil
 }
 
-func getMatchExprValue(expression *grammar.MatchExpression, rvalue reflect.Kind) (interface{}, error) {
+func getMatchExprValue(expression *grammar.MatchExpression, rvalue reflect.Type, variables map[string]string) (interface{}, error) {
 	if expression.Value == nil {
 		return nil, nil
 	}
 
-	switch rvalue {
+	val := expression.Value.Raw
+	if expression.Value.IsVariable {
+		val, _ = variables[expression.Value.Raw]
+	}
+
+	if val == "" {
+		val = fmt.Sprintf("%v", reflect.Zero(rvalue).Interface())
+	}
+
+	switch rvalue.Kind() {
 	case reflect.Bool:
-		return CoerceBool(expression.Value.Raw)
+		return CoerceBool(val)
 
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return CoerceInt64(expression.Value.Raw)
+		return CoerceInt64(val)
 
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		return CoerceUint64(expression.Value.Raw)
+		return CoerceUint64(val)
 
 	case reflect.Float32:
-		return CoerceFloat32(expression.Value.Raw)
+		return CoerceFloat32(val)
 
 	case reflect.Float64:
-		return CoerceFloat64(expression.Value.Raw)
+		return CoerceFloat64(val)
 
 	default:
-		return expression.Value.Raw, nil
+		return val, nil
 	}
 }
 
@@ -247,17 +256,17 @@ func evaluateMatchExpression(expression *grammar.MatchExpression, datum interfac
 	rvalue := reflect.Indirect(reflect.ValueOf(val))
 	switch expression.Operator {
 	case grammar.MatchEqual:
-		return doMatchEqual(expression, rvalue)
+		return doMatchEqual(expression, rvalue, opts.withVariables)
 	case grammar.MatchNotEqual:
-		result, err := doMatchEqual(expression, rvalue)
+		result, err := doMatchEqual(expression, rvalue, opts.withVariables)
 		if err == nil {
 			return !result, nil
 		}
 		return false, err
 	case grammar.MatchIn:
-		return doMatchIn(expression, rvalue)
+		return doMatchIn(expression, rvalue, opts.withVariables)
 	case grammar.MatchNotIn:
-		result, err := doMatchIn(expression, rvalue)
+		result, err := doMatchIn(expression, rvalue, opts.withVariables)
 		if err == nil {
 			return !result, nil
 		}
@@ -271,9 +280,9 @@ func evaluateMatchExpression(expression *grammar.MatchExpression, datum interfac
 		}
 		return false, err
 	case grammar.MatchMatches:
-		return doMatchMatches(expression, rvalue)
+		return doMatchMatches(expression, rvalue, opts.withVariables)
 	case grammar.MatchNotMatches:
-		result, err := doMatchMatches(expression, rvalue)
+		result, err := doMatchMatches(expression, rvalue, opts.withVariables)
 		if err == nil {
 			return !result, nil
 		}

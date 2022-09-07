@@ -20,6 +20,7 @@ type options struct {
 	withTagName        string
 	withHookFn         ValueTransformationHookFn
 	withUnknown        *interface{}
+	withVariables      map[string]string
 }
 
 func WithMaxExpressions(maxExprCnt uint64) Option {
@@ -32,6 +33,12 @@ func WithMaxExpressions(maxExprCnt uint64) Option {
 func WithTagName(tagName string) Option {
 	return func(o *options) {
 		o.withTagName = tagName
+	}
+}
+
+func withVariables(vars map[string]string) Option {
+	return func(o *options) {
+		o.withVariables = vars
 	}
 }
 

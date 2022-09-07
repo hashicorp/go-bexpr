@@ -331,7 +331,7 @@ func TestEvaluate(t *testing.T) {
 					expr, err := CreateEvaluator(expTest.expression, WithHookFn(expTest.hook))
 					require.NoError(t, err)
 
-					match, err := expr.Evaluate(tcase.value)
+					match, err := expr.Evaluate(tcase.value, nil)
 					if expTest.err != "" {
 						require.Error(t, err)
 						require.EqualError(t, err, expTest.err)
@@ -402,7 +402,7 @@ func TestWithHookFn(t *testing.T) {
 				expr, err := CreateEvaluator(eval.expression, WithHookFn(tc.hook))
 				require.NoError(t, err)
 
-				match, err := expr.Evaluate(tc.in)
+				match, err := expr.Evaluate(tc.in, nil)
 				if eval.err != "" {
 					require.Error(t, err)
 					require.Equal(t, eval.err, err.Error())
@@ -452,7 +452,7 @@ func TestUnknownVal(t *testing.T) {
 
 			match, err := expr.Evaluate(map[string]string{
 				"key": "foo",
-			})
+			}, nil)
 			if tc.err != "" {
 				require.Error(t, err)
 				require.EqualError(t, err, tc.err)
@@ -503,7 +503,7 @@ func TestUnknownVal_struct(t *testing.T) {
 				Key string `bexpr:"key"`
 			}{
 				Key: "foo",
-			})
+			}, nil)
 			if tc.err != "" {
 				require.Error(t, err)
 				require.EqualError(t, err, tc.err)
@@ -562,7 +562,7 @@ func TestCustomTag(t *testing.T) {
 			expr, err := CreateEvaluator(tc.expression, opts...)
 			require.NoError(t, err)
 
-			match, err := expr.Evaluate(ts)
+			match, err := expr.Evaluate(ts, nil)
 			if tc.jsonTag {
 				if tc.jnameFound {
 					require.NoError(t, err)
@@ -601,7 +601,7 @@ func BenchmarkEvaluate(b *testing.B) {
 
 					b.ResetTimer()
 					for n := 0; n < b.N; n++ {
-						_, err = expr.Evaluate(tcase.value)
+						_, err = expr.Evaluate(tcase.value, nil)
 						if expTest.err != "" {
 							require.Error(b, err)
 						} else {

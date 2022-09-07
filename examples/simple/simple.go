@@ -46,7 +46,7 @@ func main() {
 			continue
 		}
 
-		result, err := eval.Evaluate(value)
+		result, err := eval.Evaluate(value, nil)
 		if err != nil {
 			fmt.Printf("Failed to run evaluation of expression %q: %v\n", expression, err)
 			continue

@@ -82,8 +82,9 @@ func (op MatchOperator) String() string {
 }
 
 type MatchValue struct {
-	Raw       string
-	Converted interface{}
+	Raw        string
+	Converted  interface{}
+	IsVariable bool
 }
 
 type UnaryExpression struct {
