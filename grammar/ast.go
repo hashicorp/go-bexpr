@@ -103,11 +103,13 @@ const (
 	SelectorTypeUnknown = iota
 	SelectorTypeBexpr
 	SelectorTypeJsonPointer
+	SelectorTypeInlineValue
 )
 
 type Selector struct {
-	Type SelectorType
-	Path []string
+	Type        SelectorType
+	Path        []string
+	InlineValue *MatchValue
 }
 
 func (sel Selector) String() string {
@@ -119,6 +121,8 @@ func (sel Selector) String() string {
 		return strings.Join(sel.Path, ".")
 	case SelectorTypeJsonPointer:
 		return strings.Join(sel.Path, "/")
+	case SelectorTypeInlineValue:
+		return sel.InlineValue.Raw
 	default:
 		return ""
 	}

@@ -116,6 +116,29 @@ Selector "selector" <- first:Identifier rest:SelectorOrIndex* {
       }
    }
    return sel, nil
+} / "[" _? first:StringLiteral rest:("," _? StringLiteral)* _? "]" {
+   if first == nil {
+      return nil, errors.New("no value for inline matching")
+   }
+   vals := []string{first.(string)}
+   if rest != nil {
+      restVals := rest.([]interface{})
+      for _, val := range restVals {
+         tuple := val.([]interface{})
+         if len(tuple) != 3 {
+            return nil, errors.New("unexpected inline raw value")
+         }
+         // Goes in comma, space, value order
+         vals = append(vals, tuple[2].(string))
+      }
+   }
+   sel := Selector{
+      Type: SelectorTypeInlineValue,
+      InlineValue: &MatchValue{
+         Raw: strings.Join(vals, ","),
+      },
+   }
+   return sel, nil
 } / '"' ptrsegs:JsonPointerSegment* '"' {
    sel := Selector{
       Type: SelectorTypeJsonPointer,
