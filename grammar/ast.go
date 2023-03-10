@@ -87,7 +87,7 @@ func (op MatchOperator) String() string {
 	case MatchLesserThan:
 		return "Lesser Than"
 	case MatchLesserOrEqualThan:
-		return "Lesser or Equal Than"
+		return "Lesser Than"
 	default:
 		return "UNKNOWN"
 	}

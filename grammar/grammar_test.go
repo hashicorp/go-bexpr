@@ -21,8 +21,8 @@ func TestExpressionParsing(t *testing.T) {
 			err:      "",
 		},
 		"Match LesserThan": {
-			input:    "foo > 3",
-			expected: &MatchExpression{Selector: Selector{Type: SelectorTypeBexpr, Path: []string{"foo"}}, Operator: MatchGreaterThan, Value: &MatchValue{Raw: "3"}},
+			input:    "foo < 3",
+			expected: &MatchExpression{Selector: Selector{Type: SelectorTypeBexpr, Path: []string{"foo"}}, Operator: MatchLesserThan, Value: &MatchValue{Raw: "3"}},
 			err:      "",
 		},
 		"Match Equality": {
