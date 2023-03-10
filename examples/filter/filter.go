@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	bexpr "github.com/hashicorp/go-bexpr"
+	bexpr "github.com/solo-finance/go-bexpr"
 )
 
 type Filterable struct {

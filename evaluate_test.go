@@ -301,6 +301,7 @@ var evaluateTests map[string]expressionTest = map[string]expressionTest{
 			{expression: `"/Nested/SliceOfInts" == "7"`, result: false, err: `unable to find suitable primitive comparison function for matching`},
 			{expression: "Nested.MapOfStructs is empty or (Nested.SliceOfInts contains 7 and 9 in Nested.SliceOfInts)", result: true, benchQuick: true},
 			{expression: "Nested.SliceOfStructs.0.X == 1", result: true},
+			{expression: "all Nested.SliceOfStructs as i, v { i == 0 and v.X > 1 or i == 1 and v.X == 3 }", result: true},
 			{expression: "Nested.SliceOfStructs.0.Y == 4", result: false},
 			{expression: "Nested.Map.notfound == 4", result: false, err: `error finding value in datum: /Nested/Map/notfound at part 2: couldn't find key "notfound"`},
 			{expression: "Map in Nested", result: false, err: "Cannot perform in/contains operations on type struct for selector: \"Nested\""},

@@ -56,6 +56,10 @@ const (
 	MatchIsNotEmpty
 	MatchMatches
 	MatchNotMatches
+	MatchGreaterOrEqualThan
+	MatchGreaterThan
+	MatchLesserOrEqualThan
+	MatchLesserThan
 )
 
 func (op MatchOperator) String() string {
@@ -76,6 +80,14 @@ func (op MatchOperator) String() string {
 		return "Matches"
 	case MatchNotMatches:
 		return "Not Matches"
+	case MatchGreaterThan:
+		return "Greater Than"
+	case MatchGreaterOrEqualThan:
+		return "Greater or Equal Than"
+	case MatchLesserThan:
+		return "Lesser Than"
+	case MatchLesserOrEqualThan:
+		return "Lesser or Equal Than"
 	default:
 		return "UNKNOWN"
 	}
@@ -129,6 +141,69 @@ type MatchExpression struct {
 	Operator MatchOperator
 	Value    *MatchValue
 }
+type CollectionNameBinding struct {
+	Mode    CollectionBindMode
+	Default string
+	Index   string
+	Value   string
+}
+
+func (b *CollectionNameBinding) String() string {
+	switch b.Mode {
+	case CollectionBindDefault:
+		return fmt.Sprintf("Default ( %s )", b.Default)
+	case CollectionBindIndex:
+		return fmt.Sprintf("Index ( %s )", b.Index)
+	case CollectionBindValue:
+		return fmt.Sprintf("Value ( %s )", b.Value)
+	case CollectionBindIndexAndValue:
+		return fmt.Sprintf("Index & Value ( %s, %s )", b.Index, b.Value)
+	default:
+		return "UNKNOWN"
+	}
+}
+
+type CollectionExpression struct {
+	Operator    CollectionOperator
+	Selector    Selector
+	NameBinding CollectionNameBinding
+	Expression  Expression
+}
+
+func (expr *CollectionExpression) GetSelector() Selector {
+	return expr.Selector
+}
+
+func (expr *CollectionExpression) SetSelector(sel Selector) {
+	expr.Selector = sel
+}
+
+type CollectionBindMode int
+
+const (
+	CollectionBindDefault CollectionBindMode = iota
+	CollectionBindIndex
+	CollectionBindValue
+	CollectionBindIndexAndValue
+)
+
+type CollectionOperator int
+
+const (
+	CollectionOpAny CollectionOperator = iota
+	CollectionOpAll
+)
+
+func (op CollectionOperator) String() string {
+	switch op {
+	case CollectionOpAny:
+		return "any"
+	case CollectionOpAll:
+		return "all"
+	default:
+		return "UNKNOWN"
+	}
+}
 
 func (expr *UnaryExpression) ExpressionDump(w io.Writer, indent string, level int) {
 	localIndent := strings.Repeat(indent, level)
@@ -147,9 +222,15 @@ func (expr *BinaryExpression) ExpressionDump(w io.Writer, indent string, level i
 
 func (expr *MatchExpression) ExpressionDump(w io.Writer, indent string, level int) {
 	switch expr.Operator {
-	case MatchEqual, MatchNotEqual, MatchIn, MatchNotIn:
+	case MatchEqual, MatchNotEqual, MatchIn, MatchNotIn, MatchLesserOrEqualThan, MatchGreaterThan, MatchGreaterOrEqualThan, MatchLesserThan:
 		fmt.Fprintf(w, "%[1]s%[3]s {\n%[2]sSelector: %[4]v\n%[2]sValue: %[5]q\n%[1]s}\n", strings.Repeat(indent, level), strings.Repeat(indent, level+1), expr.Operator.String(), expr.Selector, expr.Value.Raw)
 	default:
 		fmt.Fprintf(w, "%[1]s%[3]s {\n%[2]sSelector: %[4]v\n%[1]s}\n", strings.Repeat(indent, level), strings.Repeat(indent, level+1), expr.Operator.String(), expr.Selector)
 	}
+}
+func (expr *CollectionExpression) ExpressionDump(w io.Writer, indent string, level int) {
+	localIndent := strings.Repeat(indent, level)
+	fmt.Fprintf(w, "%[2]s%[3]s {\n%[1]s%[2]sSelector: %[4]v\n%[1]s%[2]sNameBinding: %[5]s\n", indent, localIndent, expr.Operator.String(), expr.Selector, expr.NameBinding.String())
+	expr.Expression.ExpressionDump(w, indent, level+2)
+	fmt.Fprintf(w, "%s}\n", localIndent)
 }

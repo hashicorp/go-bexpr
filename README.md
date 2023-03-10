@@ -1,4 +1,4 @@
-# bexpr - Boolean Expression Evaluator [![GoDoc](https://godoc.org/github.com/hashicorp/go-bexpr?status.svg)](https://godoc.org/github.com/hashicorp/go-bexpr) [![CircleCI](https://circleci.com/gh/hashicorp/go-bexpr.svg?style=svg)](https://circleci.com/gh/hashicorp/go-bexpr)
+# bexpr - Boolean Expression Evaluator [![GoDoc](https://godoc.org/github.com/solo-finance/go-bexpr?status.svg)](https://godoc.org/github.com/solo-finance/go-bexpr) [![CircleCI](https://circleci.com/gh/hashicorp/go-bexpr.svg?style=svg)](https://circleci.com/gh/hashicorp/go-bexpr)
 
 `bexpr` is a Go (golang) library to provide generic boolean expression
 evaluation and filtering for Go data structures and maps. Under the hood,
@@ -20,7 +20,7 @@ package main
 
 import (
    "fmt"
-   "github.com/hashicorp/go-bexpr"
+   "github.com/solo-finance/go-bexpr"
 )
 
 type Example struct {

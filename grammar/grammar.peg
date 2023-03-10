@@ -15,6 +15,15 @@ Input <- _? "(" _? expr:OrExpression _? ")" _? EOF {
    return expr, nil
 }
 
+CollectionSelectorExpression "collection-selector" <- op:(CollectionOpAny / CollectionOpAll) selector:Selector _ "as" _ binding:CollectionIdentifiers _? "{" _? expr:OrExpression _? "}" {
+   return &CollectionExpression{
+      Operator: op.(CollectionOperator),
+      Selector: selector.(Selector),
+      NameBinding: *binding.(*CollectionNameBinding),
+      Expression: expr.(Expression),
+   }, nil
+}
+
 OrExpression <- left:AndExpression _ "or" _ right:OrExpression {
    return &BinaryExpression{
       Operator: BinaryOpOr,
@@ -54,13 +63,38 @@ ParenthesizedExpression "grouping" <- "(" _? expr:OrExpression _? ")" {
    return expr, nil
 } / expr:MatchExpression {
    return expr, nil
+} / expr:CollectionSelectorExpression {
+   return expr, nil    
 } / "(" _? OrExpression _? !")" &{
    return false, errors.New("Unmatched parentheses")
 }
 
+CollectionIdentifiers "collection-identifiers" <- id1:Identifier _? "," _? id2:Identifier {
+   return &CollectionNameBinding{
+      Mode: CollectionBindIndexAndValue,
+      Index: id1.(string),
+      Value: id2.(string),
+   }, nil
+} / id1:Identifier _? "," _? "_" {
+   return &CollectionNameBinding{
+      Mode: CollectionBindIndex,
+      Index: id1.(string),
+   }, nil
+} / "_" _? "," _? id2:Identifier {
+   return &CollectionNameBinding{
+      Mode: CollectionBindValue,
+      Value: id2.(string),
+   }, nil
+} / id:Identifier {
+   return &CollectionNameBinding{
+      Mode: CollectionBindDefault,
+      Default: id.(string),
+   }, nil
+}
+
 MatchExpression "match" <- MatchSelectorOpValue / MatchSelectorOp / MatchValueOpSelector
 
-MatchSelectorOpValue "match" <- selector:Selector operator:(MatchEqual / MatchNotEqual / MatchContains / MatchNotContains / MatchMatches / MatchNotMatches) value:Value {
+MatchSelectorOpValue "match" <- selector:Selector operator:(MatchEqual / MatchNotEqual / MatchContains / MatchNotContains / MatchMatches / MatchNotMatches / MatchGreaterOrEqualThan / MatchGreaterThan / MatchLesserOrEqualThan / MatchLesserThan) value:Value {
    return &MatchExpression{Selector: selector.(Selector), Operator: operator.(MatchOperator), Value: value.(*MatchValue)}, nil
 }
 
@@ -72,6 +106,22 @@ MatchValueOpSelector "match" <- value:Value operator:(MatchIn / MatchNotIn) sele
    return &MatchExpression{Selector: selector.(Selector), Operator: operator.(MatchOperator), Value: value.(*MatchValue)}, nil
 } / Value operator:(MatchIn / MatchNotIn) !Selector &{
    return false, errors.New("Invalid selector")
+}
+
+MatchGreaterThan <- _? ">" _? {
+   return MatchGreaterThan, nil
+}
+
+MatchGreaterOrEqualThan <- _? ">=" _? {
+   return MatchGreaterOrEqualThan, nil
+}
+
+MatchLesserThan <- _? "<" _? {
+   return MatchLesserThan, nil
+}
+
+MatchLesserOrEqualThan <- _? "<=" _? {
+   return MatchLesserOrEqualThan, nil
 }
 
 MatchEqual <- _? "==" _? {
@@ -103,6 +153,14 @@ MatchMatches <- _ "matches" _ {
 }
 MatchNotMatches <- _ "not" _ "matches" _ {
    return MatchNotMatches, nil
+}
+
+CollectionOpAny <- "any" _ {
+   return CollectionOpAny, nil
+}
+
+CollectionOpAll <- "all" _ {
+   return CollectionOpAll, nil
 }
 
 Selector "selector" <- first:Identifier rest:SelectorOrIndex* {

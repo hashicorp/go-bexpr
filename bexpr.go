@@ -8,8 +8,8 @@ package bexpr
 //go:generate goimports -w grammar/grammar.go
 
 import (
-	"github.com/hashicorp/go-bexpr/grammar"
 	"github.com/mitchellh/pointerstructure"
+	"github.com/solo-finance/go-bexpr/grammar"
 )
 
 // HookFn provides a way to translate one reflect.Value to another during

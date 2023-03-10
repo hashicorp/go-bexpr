@@ -1,15 +1,17 @@
 package bexpr
 
 import (
-	"encoding/json"
+	"bytes"
 	"errors"
 	"fmt"
 	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
-	"github.com/hashicorp/go-bexpr/grammar"
+	"github.com/solo-finance/go-bexpr/grammar"
+
 	"github.com/mitchellh/pointerstructure"
 )
 
@@ -34,6 +36,40 @@ func primitiveEqualityFn(kind reflect.Kind) func(first interface{}, second refle
 	}
 }
 
+func primitiveGreaterThanFn(kind reflect.Kind) func(first interface{}, second reflect.Value) bool {
+	switch kind {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return doGreaterThanInt64
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return doGreaterThanUint64
+	case reflect.Float32:
+		return doGreaterThanFloat32
+	case reflect.Float64:
+		return doGreaterThanFloat64
+	case reflect.String:
+		return doGreaterThanString
+	default:
+		return nil
+	}
+}
+
+func primitiveLesserThanFn(kind reflect.Kind) func(first interface{}, second reflect.Value) bool {
+	switch kind {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return doLesserThanInt64
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return doLesserThanUint64
+	case reflect.Float32:
+		return doLesserThanFloat32
+	case reflect.Float64:
+		return doLesserThanFloat64
+	case reflect.String:
+		return doLesserThanString
+	default:
+		return nil
+	}
+}
+
 func doEqualBool(first interface{}, second reflect.Value) bool {
 	return first.(bool) == second.Bool()
 }
@@ -42,20 +78,78 @@ func doEqualInt64(first interface{}, second reflect.Value) bool {
 	return first.(int64) == second.Int()
 }
 
+func doGreaterThanInt64(first interface{}, second reflect.Value) bool {
+	return first.(int64) > second.Int()
+}
+
+func doLesserThanInt64(first interface{}, second reflect.Value) bool {
+	return first.(int64) < second.Int()
+}
+
 func doEqualUint64(first interface{}, second reflect.Value) bool {
 	return first.(uint64) == second.Uint()
+}
+
+func doGreaterThanUint64(first interface{}, second reflect.Value) bool {
+	return first.(uint64) > second.Uint()
+}
+
+func doLesserThanUint64(first interface{}, second reflect.Value) bool {
+	return first.(uint64) < second.Uint()
 }
 
 func doEqualFloat32(first interface{}, second reflect.Value) bool {
 	return first.(float32) == float32(second.Float())
 }
 
+func doGreaterThanFloat32(first interface{}, second reflect.Value) bool {
+	return first.(float32) > float32(second.Float())
+}
+
+func doLesserThanFloat32(first interface{}, second reflect.Value) bool {
+	return first.(float32) < float32(second.Float())
+}
+
 func doEqualFloat64(first interface{}, second reflect.Value) bool {
 	return first.(float64) == second.Float()
 }
 
+func doGreaterThanFloat64(first interface{}, second reflect.Value) bool {
+	return first.(float64) > second.Float()
+}
+
+func doLesserThanFloat64(first interface{}, second reflect.Value) bool {
+	return first.(float64) < second.Float()
+}
+
 func doEqualString(first interface{}, second reflect.Value) bool {
-	return first.(string) == second.String()
+	dateTimeFirst, errFirst := time.Parse("2020-10-30", first.(string))
+	dateTimeSecond, errSecond := time.Parse("2020-10-30", second.String())
+
+	if errFirst != nil || errSecond != nil {
+		return first.(string) == second.String()
+	}
+	return dateTimeFirst.Unix() == dateTimeSecond.Unix()
+}
+
+func doGreaterThanString(first interface{}, second reflect.Value) bool {
+	dateTimeFirst, errFirst := time.Parse("2020-10-30", first.(string))
+	dateTimeSecond, errSecond := time.Parse("2020-10-30", second.String())
+
+	if errFirst != nil || errSecond != nil {
+		return first.(string) > second.String()
+	}
+	return dateTimeFirst.Unix() > dateTimeSecond.Unix()
+}
+
+func doLesserThanString(first interface{}, second reflect.Value) bool {
+	dateTimeFirst, errFirst := time.Parse("2020-10-30", first.(string))
+	dateTimeSecond, errSecond := time.Parse("2020-10-30", second.String())
+
+	if errFirst != nil || errSecond != nil {
+		return first.(string) < second.String()
+	}
+	return dateTimeFirst.Unix() < dateTimeSecond.Unix()
 }
 
 // Get rid of 0 to many levels of pointers to get at the real type
@@ -99,6 +193,66 @@ func doMatchEqual(expression *grammar.MatchExpression, value reflect.Value) (boo
 		return false, fmt.Errorf("error getting match value in expression: %w", err)
 	}
 	return eqFn(matchValue, value), nil
+}
+
+func doMatchGreaterThan(expression *grammar.MatchExpression, value reflect.Value) (bool, error) {
+	// NOTE: see preconditions in evaluategrammar.MatchExpressionRecurse
+	gthanFn := primitiveGreaterThanFn(value.Kind())
+	if gthanFn == nil {
+		return false, errors.New("unable to find suitable primitive comparison function for matching")
+	}
+	matchValue, err := getMatchExprValue(expression, value.Kind())
+	if err != nil {
+		return false, fmt.Errorf("error getting match value in expression: %w", err)
+	}
+	return gthanFn(matchValue, value), nil
+}
+
+func doMatchGreaterOrEqualThan(expression *grammar.MatchExpression, value reflect.Value) (bool, error) {
+	eqFn := primitiveEqualityFn(value.Kind())
+	if eqFn == nil {
+		return false, errors.New("unable to find suitable primitive comparison function for matching")
+	}
+	matchValue, err := getMatchExprValue(expression, value.Kind())
+	if err != nil {
+		return false, fmt.Errorf("error getting match value in expression: %w", err)
+	}
+	// NOTE: see preconditions in evaluategrammar.MatchExpressionRecurse
+	gthanFn := primitiveGreaterThanFn(value.Kind())
+	if gthanFn == nil {
+		return false, errors.New("unable to find suitable primitive comparison function for matching")
+	}
+	return eqFn(matchValue, value) || gthanFn(matchValue, value), nil
+}
+
+func doMatchLesserThan(expression *grammar.MatchExpression, value reflect.Value) (bool, error) {
+	// NOTE: see preconditions in evaluategrammar.MatchExpressionRecurse
+	lthanFn := primitiveLesserThanFn(value.Kind())
+	if lthanFn == nil {
+		return false, errors.New("unable to find suitable primitive comparison function for matching")
+	}
+	matchValue, err := getMatchExprValue(expression, value.Kind())
+	if err != nil {
+		return false, fmt.Errorf("error getting match value in expression: %w", err)
+	}
+	return lthanFn(matchValue, value), nil
+}
+
+func doMatchLesserOrEqualThan(expression *grammar.MatchExpression, value reflect.Value) (bool, error) {
+	eqFn := primitiveEqualityFn(value.Kind())
+	if eqFn == nil {
+		return false, errors.New("unable to find suitable primitive comparison function for matching")
+	}
+	matchValue, err := getMatchExprValue(expression, value.Kind())
+	if err != nil {
+		return false, fmt.Errorf("error getting match value in expression: %w", err)
+	}
+	// NOTE: see preconditions in evaluategrammar.MatchExpressionRecurse
+	lthanFn := primitiveLesserThanFn(value.Kind())
+	if lthanFn == nil {
+		return false, errors.New("unable to find suitable primitive comparison function for matching")
+	}
+	return eqFn(matchValue, value) || lthanFn(matchValue, value), nil
 }
 
 func doMatchIn(expression *grammar.MatchExpression, value reflect.Value) (bool, error) {
@@ -213,6 +367,57 @@ func getMatchExprValue(expression *grammar.MatchExpression, rvalue reflect.Kind)
 	}
 }
 
+func evaluateCollectionExpression(expression *grammar.CollectionExpression, datum interface{}, opt ...Option) (bool, error) {
+	opts := getOpts(opt...)
+	ptr := pointerstructure.Pointer{
+		Parts: expression.Selector.Path,
+		Config: pointerstructure.Config{
+			TagName:                 opts.withTagName,
+			ValueTransformationHook: opts.withHookFn,
+		},
+	}
+	val, err := ptr.Get(datum)
+	if err != nil {
+		if errors.Is(err, pointerstructure.ErrNotFound) && opts.withUnknown != nil {
+			err = nil
+			val = *opts.withUnknown
+		}
+
+		if err != nil {
+			return false, fmt.Errorf("error finding value in datum: %w", err)
+		}
+	}
+	fmt.Println(opts)
+	buf := new(bytes.Buffer)
+	expression.Expression.ExpressionDump(buf, " ", 0)
+	fmt.Println(buf.String())
+	fmt.Println(val)
+	rvalue := reflect.Indirect(reflect.ValueOf(val))
+	switch expression.Operator {
+	case grammar.CollectionOpAll:
+		for i := 0; i < rvalue.Len(); i++ {
+			sliceValue := rvalue.Index(i)
+			result, _ := evaluate(expression.Expression, sliceValue, opt...)
+			if !result && expression.Operator == grammar.CollectionOpAny {
+				return false, nil
+			}
+		}
+		return true, nil
+	case grammar.CollectionOpAny:
+		for i := 0; i < rvalue.Len(); i++ {
+			sliceValue := rvalue.Index(i)
+			result, _ := evaluate(expression.Expression, sliceValue, opt...)
+			if result && expression.Operator == grammar.CollectionOpAny {
+				return true, nil
+			}
+		}
+		return false, nil
+
+	}
+	return false, nil
+
+}
+
 func evaluateMatchExpression(expression *grammar.MatchExpression, datum interface{}, opt ...Option) (bool, error) {
 	opts := getOpts(opt...)
 	ptr := pointerstructure.Pointer{
@@ -234,18 +439,16 @@ func evaluateMatchExpression(expression *grammar.MatchExpression, datum interfac
 		}
 	}
 
-	if jn, ok := val.(json.Number); ok {
-		if jni, err := jn.Int64(); err == nil {
-			val = jni
-		} else if jnf, err := jn.Float64(); err == nil {
-			val = jnf
-		} else {
-			return false, fmt.Errorf("unable to convert json number %s to int or float", jn)
-		}
-	}
-
 	rvalue := reflect.Indirect(reflect.ValueOf(val))
 	switch expression.Operator {
+	case grammar.MatchGreaterThan:
+		return doMatchGreaterThan(expression, rvalue)
+	case grammar.MatchGreaterOrEqualThan:
+		return doMatchGreaterOrEqualThan(expression, rvalue)
+	case grammar.MatchLesserThan:
+		return doMatchLesserThan(expression, rvalue)
+	case grammar.MatchLesserOrEqualThan:
+		return doMatchLesserOrEqualThan(expression, rvalue)
 	case grammar.MatchEqual:
 		return doMatchEqual(expression, rvalue)
 	case grammar.MatchNotEqual:
@@ -284,6 +487,7 @@ func evaluateMatchExpression(expression *grammar.MatchExpression, datum interfac
 }
 
 func evaluate(ast grammar.Expression, datum interface{}, opt ...Option) (bool, error) {
+
 	switch node := ast.(type) {
 	case *grammar.UnaryExpression:
 		switch node.Operator {
@@ -311,6 +515,9 @@ func evaluate(ast grammar.Expression, datum interface{}, opt ...Option) (bool, e
 		}
 	case *grammar.MatchExpression:
 		return evaluateMatchExpression(node, datum, opt...)
+	case *grammar.CollectionExpression:
+		return evaluateCollectionExpression(node, datum, opt...)
 	}
+
 	return false, fmt.Errorf("Invalid AST node")
 }

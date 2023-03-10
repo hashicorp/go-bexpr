@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/hashicorp/go-bexpr"
+	"github.com/solo-finance/go-bexpr"
 )
 
 type Example struct {

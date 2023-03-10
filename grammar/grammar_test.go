@@ -15,6 +15,16 @@ func TestExpressionParsing(t *testing.T) {
 	}
 
 	tests := map[string]testCase{
+		"Match GreaterThan": {
+			input:    "foo > 3",
+			expected: &MatchExpression{Selector: Selector{Type: SelectorTypeBexpr, Path: []string{"foo"}}, Operator: MatchGreaterThan, Value: &MatchValue{Raw: "3"}},
+			err:      "",
+		},
+		"Match LesserThan": {
+			input:    "foo > 3",
+			expected: &MatchExpression{Selector: Selector{Type: SelectorTypeBexpr, Path: []string{"foo"}}, Operator: MatchGreaterThan, Value: &MatchValue{Raw: "3"}},
+			err:      "",
+		},
 		"Match Equality": {
 			input:    "foo == 3",
 			expected: &MatchExpression{Selector: Selector{Type: SelectorTypeBexpr, Path: []string{"foo"}}, Operator: MatchEqual, Value: &MatchValue{Raw: "3"}},

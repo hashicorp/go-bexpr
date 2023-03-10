@@ -15,6 +15,10 @@ func TestAST_Dump(t *testing.T) {
 	}
 
 	tests := map[string]testCase{
+		"MatchGreaterThan": {
+			expr:     &MatchExpression{Selector: Selector{Type: SelectorTypeBexpr, Path: []string{"foo", "bar"}}, Operator: MatchGreaterThan, Value: &MatchValue{Raw: "baz"}},
+			expected: "Greater Than {\n   Selector: foo.bar\n   Value: \"baz\"\n}\n",
+		},
 		"MatchEqual": {
 			expr:     &MatchExpression{Selector: Selector{Type: SelectorTypeBexpr, Path: []string{"foo", "bar"}}, Operator: MatchEqual, Value: &MatchValue{Raw: "baz"}},
 			expected: "Equal {\n   Selector: foo.bar\n   Value: \"baz\"\n}\n",
