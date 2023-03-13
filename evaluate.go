@@ -29,7 +29,7 @@ func primitiveEqualityFn(kind reflect.Kind) func(first interface{}, second refle
 		return doEqualFloat32
 	case reflect.Float64:
 		return doEqualFloat64
-	case reflect.String:
+	case reflect.String, reflect.Struct:
 		return doEqualString
 	default:
 		return nil
@@ -46,7 +46,7 @@ func primitiveGreaterThanFn(kind reflect.Kind) func(first interface{}, second re
 		return doGreaterThanFloat32
 	case reflect.Float64:
 		return doGreaterThanFloat64
-	case reflect.String:
+	case reflect.String, reflect.Struct:
 		return doGreaterThanString
 	default:
 		return nil
@@ -63,7 +63,7 @@ func primitiveLesserThanFn(kind reflect.Kind) func(first interface{}, second ref
 		return doLesserThanFloat32
 	case reflect.Float64:
 		return doLesserThanFloat64
-	case reflect.String:
+	case reflect.String, reflect.Struct:
 		return doLesserThanString
 	default:
 		return nil
@@ -123,33 +123,42 @@ func doLesserThanFloat64(first interface{}, second reflect.Value) bool {
 }
 
 func doEqualString(first interface{}, second reflect.Value) bool {
-	dateTimeFirst, errFirst := time.Parse("2020-10-30", first.(string))
-	dateTimeSecond, errSecond := time.Parse("2020-10-30", second.String())
-
-	if errFirst != nil || errSecond != nil {
+	dateTimeFirst, errFirst := time.Parse("2006-01-02", first.(string))
+	switch second.Interface().(type) {
+	case time.Time:
+		if errFirst != nil {
+			return first.(string) == second.Interface().(time.Time).Format("2006-01-02")
+		}
+		return second.Interface().(time.Time).Unix() == dateTimeFirst.Unix()
+	default:
 		return first.(string) == second.String()
 	}
-	return dateTimeFirst.Unix() == dateTimeSecond.Unix()
 }
 
 func doGreaterThanString(first interface{}, second reflect.Value) bool {
-	dateTimeFirst, errFirst := time.Parse("2020-10-30", first.(string))
-	dateTimeSecond, errSecond := time.Parse("2020-10-30", second.String())
-
-	if errFirst != nil || errSecond != nil {
+	dateTimeFirst, errFirst := time.Parse("2006-01-02", first.(string))
+	switch second.Interface().(type) {
+	case time.Time:
+		if errFirst != nil {
+			return first.(string) > second.Interface().(time.Time).Format("2006-01-02")
+		}
+		return second.Interface().(time.Time).Unix() > dateTimeFirst.Unix()
+	default:
 		return first.(string) > second.String()
 	}
-	return dateTimeFirst.Unix() > dateTimeSecond.Unix()
 }
 
 func doLesserThanString(first interface{}, second reflect.Value) bool {
-	dateTimeFirst, errFirst := time.Parse("2020-10-30", first.(string))
-	dateTimeSecond, errSecond := time.Parse("2020-10-30", second.String())
-
-	if errFirst != nil || errSecond != nil {
+	dateTimeFirst, errFirst := time.Parse("2006-01-02", first.(string))
+	switch second.Interface().(type) {
+	case time.Time:
+		if errFirst != nil {
+			return first.(string) < second.Interface().(time.Time).Format("2006-01-02")
+		}
+		return second.Interface().(time.Time).Unix() < dateTimeFirst.Unix()
+	default:
 		return first.(string) < second.String()
 	}
-	return dateTimeFirst.Unix() < dateTimeSecond.Unix()
 }
 
 // Get rid of 0 to many levels of pointers to get at the real type
@@ -184,6 +193,7 @@ func doMatchMatches(expression *grammar.MatchExpression, value reflect.Value) (b
 
 func doMatchEqual(expression *grammar.MatchExpression, value reflect.Value) (bool, error) {
 	// NOTE: see preconditions in evaluategrammar.MatchExpressionRecurse
+	fmt.Println(value.Kind())
 	eqFn := primitiveEqualityFn(value.Kind())
 	if eqFn == nil {
 		return false, errors.New("unable to find suitable primitive comparison function for matching")
