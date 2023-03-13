@@ -340,7 +340,7 @@ var evaluateTests map[string]expressionTest = map[string]expressionTest{
 			{expression: "7 in Nested.SliceOfInts", result: true},
 			{expression: `"/Nested/SliceOfInts" == "7"`, result: false, err: `unable to find suitable primitive comparison function for matching`},
 			{expression: "Nested.MapOfStructs is empty or (Nested.SliceOfInts contains 7 and 9 in Nested.SliceOfInts)", result: true, benchQuick: true},
-			{expression: "Nested.SliceOfStructs.0.X == 1", result: true},
+			{expression: "Nested.SliceOfStructs.0.X < 2", result: true},
 			{expression: "all Nested.SliceOfStructs as i, v { X >= 1 or X == 3 }", result: true},
 			{expression: "Nested.SliceOfStructs.0.Y == 4", result: false},
 			{expression: "Nested.Map.notfound == 4", result: false, err: `error finding value in datum: /Nested/Map/notfound at part 2: couldn't find key "notfound"`},

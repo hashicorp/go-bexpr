@@ -79,11 +79,11 @@ func doEqualInt64(first interface{}, second reflect.Value) bool {
 }
 
 func doGreaterThanInt64(first interface{}, second reflect.Value) bool {
-	return first.(int64) > second.Int()
+	return first.(int64) < second.Int()
 }
 
 func doLesserThanInt64(first interface{}, second reflect.Value) bool {
-	return first.(int64) < second.Int()
+	return first.(int64) > second.Int()
 }
 
 func doEqualUint64(first interface{}, second reflect.Value) bool {
@@ -91,11 +91,11 @@ func doEqualUint64(first interface{}, second reflect.Value) bool {
 }
 
 func doGreaterThanUint64(first interface{}, second reflect.Value) bool {
-	return first.(uint64) > second.Uint()
+	return first.(uint64) < second.Uint()
 }
 
 func doLesserThanUint64(first interface{}, second reflect.Value) bool {
-	return first.(uint64) < second.Uint()
+	return first.(uint64) > second.Uint()
 }
 
 func doEqualFloat32(first interface{}, second reflect.Value) bool {
@@ -103,11 +103,11 @@ func doEqualFloat32(first interface{}, second reflect.Value) bool {
 }
 
 func doGreaterThanFloat32(first interface{}, second reflect.Value) bool {
-	return first.(float32) > float32(second.Float())
+	return first.(float32) < float32(second.Float())
 }
 
 func doLesserThanFloat32(first interface{}, second reflect.Value) bool {
-	return first.(float32) < float32(second.Float())
+	return first.(float32) > float32(second.Float())
 }
 
 func doEqualFloat64(first interface{}, second reflect.Value) bool {
@@ -115,11 +115,11 @@ func doEqualFloat64(first interface{}, second reflect.Value) bool {
 }
 
 func doGreaterThanFloat64(first interface{}, second reflect.Value) bool {
-	return first.(float64) > second.Float()
+	return first.(float64) < second.Float()
 }
 
 func doLesserThanFloat64(first interface{}, second reflect.Value) bool {
-	return first.(float64) < second.Float()
+	return first.(float64) > second.Float()
 }
 
 func doEqualString(first interface{}, second reflect.Value) bool {
@@ -140,11 +140,11 @@ func doGreaterThanString(first interface{}, second reflect.Value) bool {
 	switch second.Interface().(type) {
 	case time.Time:
 		if errFirst != nil {
-			return first.(string) > second.Interface().(time.Time).Format("2006-01-02")
+			return first.(string) < second.Interface().(time.Time).Format("2006-01-02")
 		}
 		return second.Interface().(time.Time).Unix() > dateTimeFirst.Unix()
 	default:
-		return first.(string) > second.String()
+		return first.(string) < second.String()
 	}
 }
 
@@ -153,11 +153,11 @@ func doLesserThanString(first interface{}, second reflect.Value) bool {
 	switch second.Interface().(type) {
 	case time.Time:
 		if errFirst != nil {
-			return first.(string) < second.Interface().(time.Time).Format("2006-01-02")
+			return first.(string) > second.Interface().(time.Time).Format("2006-01-02")
 		}
 		return second.Interface().(time.Time).Unix() < dateTimeFirst.Unix()
 	default:
-		return first.(string) < second.String()
+		return first.(string) > second.String()
 	}
 }
 
