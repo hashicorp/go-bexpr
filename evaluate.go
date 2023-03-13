@@ -1,9 +1,9 @@
 package bexpr
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
+	"log"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -387,17 +387,13 @@ func evaluateCollectionExpression(expression *grammar.CollectionExpression, datu
 			return false, fmt.Errorf("error finding value in datum: %w", err)
 		}
 	}
-	fmt.Println(opts)
-	buf := new(bytes.Buffer)
-	expression.Expression.ExpressionDump(buf, " ", 0)
-	fmt.Println(buf.String())
-	fmt.Println(val)
 	rvalue := reflect.Indirect(reflect.ValueOf(val))
 	switch expression.Operator {
 	case grammar.CollectionOpAll:
 		for i := 0; i < rvalue.Len(); i++ {
 			sliceValue := rvalue.Index(i)
-			result, _ := evaluate(expression.Expression, sliceValue, opt...)
+			result, err := evaluate(expression.Expression, sliceValue.Interface(), opt...)
+			log.Println(err)
 			if !result && expression.Operator == grammar.CollectionOpAny {
 				return false, nil
 			}
@@ -405,8 +401,9 @@ func evaluateCollectionExpression(expression *grammar.CollectionExpression, datu
 		return true, nil
 	case grammar.CollectionOpAny:
 		for i := 0; i < rvalue.Len(); i++ {
-			sliceValue := rvalue.Index(i)
-			result, _ := evaluate(expression.Expression, sliceValue, opt...)
+			sliceValue := reflect.Indirect(rvalue.Index(i))
+			result, err := evaluate(expression.Expression, sliceValue.Interface(), opt...)
+			log.Println(err)
 			if result && expression.Operator == grammar.CollectionOpAny {
 				return true, nil
 			}
