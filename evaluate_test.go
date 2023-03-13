@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/mitchellh/pointerstructure"
 	"github.com/stretchr/testify/require"
@@ -23,7 +24,32 @@ type expressionTest struct {
 	expressions []expressionCheck
 }
 
+type EntityLink struct {
+	EntityId     string `json:"entityId"`
+	EntityDomain string `json:"domain"`
+	EntityOrigin string `json:"origin"`
+	AutoLink     bool   `json:"auto"`
+}
+
+type BankingTransaction struct {
+	Id            string       `json:"id"`
+	Avatar        string       `json:"avatar"`
+	IntegrationId string       `json:"integrationId"`
+	AccountId     string       `json:"account_id"`
+	Name          string       `json:"name"`
+	Secondary     string       `json:"secondary"`
+	Label         string       `json:"label"`
+	Description   string       `json:"description"`
+	Amount        float64      `json:"amount"`
+	Date          time.Time    `json:"date"`
+	Currency      string       `json:"currency"`
+	Tag           string       `json:"tag"`
+	Origin        string       `json:"origin"`
+	Links         []EntityLink `json:"links"`
+}
+
 var evaluateTests map[string]expressionTest = map[string]expressionTest{
+
 	"Flat Struct": {
 		testFlatStruct{
 			Int:         -1,
@@ -273,6 +299,20 @@ var evaluateTests map[string]expressionTest = map[string]expressionTest{
 					},
 				},
 				SliceOfInfs: []interface{}{"foobar", 1, true},
+				SliceOfStructs2: []BankingTransaction{
+					BankingTransaction{
+						Links: []EntityLink{
+							EntityLink{
+								EntityDomain: "relations",
+								EntityId:     "asdasdads",
+							},
+							EntityLink{
+								EntityDomain: "relations",
+								EntityId:     "c82eebcd-e3eb-45c9-9ac1-83bb685a050c",
+							},
+						},
+					},
+				},
 			},
 			TopInt: 5,
 		},
@@ -309,6 +349,7 @@ var evaluateTests map[string]expressionTest = map[string]expressionTest{
 			{expression: `"1" in "/Nested/SliceOfInfs"`, result: true},
 			{expression: `"2" in "/Nested/SliceOfInfs"`, result: false},
 			{expression: `"true" in "/Nested/SliceOfInfs"`, result: true},
+			{expression: "any Nested.SliceOfStructs2 as i, v  {Links is not empty and any Links as i, v { EntityDomain == relations and EntityId == \"c82eebcd-e3eb-45c9-9ac1-83bb685a050c\"}}", result: true},
 			{expression: `"/Nested/Map/email" matches "(foz|foo)@example.com"`, result: true},
 		},
 	},

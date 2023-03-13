@@ -103,6 +103,7 @@ type testNestedLevel1 struct {
 	MapInfInf        map[interface{}]interface{}
 	SliceOfInts      []int
 	SliceOfStructs   []testNestedLevel2_2
+	SliceOfStructs2  []BankingTransaction
 	SliceOfMapInfInf []map[interface{}]interface{}
 	SliceOfInfs      []interface{}
 }

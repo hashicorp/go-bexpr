@@ -404,17 +404,17 @@ func evaluateCollectionExpression(expression *grammar.CollectionExpression, datu
 			sliceValue := rvalue.Index(i)
 			result, err := evaluate(expression.Expression, sliceValue.Interface(), opt...)
 			log.Println(err)
-			if !result && expression.Operator == grammar.CollectionOpAny {
+			if !result {
 				return false, nil
 			}
 		}
 		return true, nil
 	case grammar.CollectionOpAny:
 		for i := 0; i < rvalue.Len(); i++ {
-			sliceValue := reflect.Indirect(rvalue.Index(i))
+			sliceValue := rvalue.Index(i)
 			result, err := evaluate(expression.Expression, sliceValue.Interface(), opt...)
 			log.Println(err)
-			if result && expression.Operator == grammar.CollectionOpAny {
+			if result {
 				return true, nil
 			}
 		}
