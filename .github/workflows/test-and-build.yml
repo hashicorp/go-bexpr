@@ -1,16 +1,21 @@
-name: hashicorp/go-bexpr/test-and-build
+name: Test and Build
+
 on:
   push:
-    branches:
-      - main
+
+permissions:
+  contents: read
+
+
 jobs:
-  go-fmt-and-vet:
+  lint:
     runs-on: ubuntu-latest
-    container:
-      image: golang:1.14
     steps:
       - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3 # v3.5.0
-      - name: check go fmt
+      - uses: actions/setup-go@4d34df0c2316fe8122ab82dc22947d607c0c91f9 # v4.0.0
+        with:
+          go-version-file: go.mod
+      - name: Check Formatting
         run: |-
           files=$(go fmt ./...)
           if [ -n "$files" ]; then
@@ -18,24 +23,31 @@ jobs:
             echo "$files"
             exit 1
           fi
-      - run: go vet ./...
+      - name: Vet code
+        run: go vet ./...
+
   test:
     runs-on: ubuntu-latest
-    container:
-      image: golang:1.14
-    needs:
-      - go-fmt-and-vet
+    strategy:
+      matrix:
+        go-version:
+          - '1.14' # oldest supported; named in go.mod
+          - 'oldstable'
+          - 'stable'
     env:
       TEST_RESULTS: "/tmp/test-results"
     steps:
       - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3 # v3.5.0
-      - run: mkdir -p $TEST_RESULTS
+      - uses: actions/setup-go@4d34df0c2316fe8122ab82dc22947d607c0c91f9 # v4.0.0
+        with:
+          go-version: ${{ matrix.go-version }}
+      - uses: autero1/action-gotestsum@2e48af62f5248bd3b014f598cd1aa69a01dd36e3 # v1.0.0
+        with:
+          gotestsum_version: 1.9.0
+
+      - run: mkdir -p "$TEST_RESULTS"
       - run: make test-ci
       - uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
         with:
-          path: "/tmp/test-results"
-      - uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
-        with:
-          path: "/tmp/test-results"
-permissions:
-  contents: read
+          path: ${{ env.TEST_RESULTS }}
+          name: tests-linux
