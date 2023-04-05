@@ -1,0 +1,39 @@
+name: hashicorp/go-bexpr/test-and-build
+on:
+  push:
+    branches:
+    - main
+jobs:
+  go-fmt-and-vet:
+    runs-on: ubuntu-latest
+    container:
+      image: golang:1.14
+    steps:
+    - uses: actions/checkout@v3.5.0
+    - name: check go fmt
+      run: |-
+        files=$(go fmt ./...)
+        if [ -n "$files" ]; then
+          echo "The following file(s) do not conform to go fmt:"
+          echo "$files"
+          exit 1
+        fi
+    - run: go vet ./...
+  test:
+    runs-on: ubuntu-latest
+    container:
+      image: golang:1.14
+    needs:
+    - go-fmt-and-vet
+    env:
+      TEST_RESULTS: "/tmp/test-results"
+    steps:
+    - uses: actions/checkout@v3.5.0
+    - run: mkdir -p $TEST_RESULTS
+    - run: make test-ci
+    - uses: actions/upload-artifact@v3.1.1
+      with:
+        path: "/tmp/test-results"
+    - uses: actions/upload-artifact@v3.1.1
+      with:
+        path: "/tmp/test-results"
