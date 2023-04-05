@@ -222,15 +222,25 @@ func evaluateMatchExpression(expression *grammar.MatchExpression, datum interfac
 			ValueTransformationHook: opts.withHookFn,
 		},
 	}
-	val, err := ptr.Get(datum)
-	if err != nil {
-		if errors.Is(err, pointerstructure.ErrNotFound) && opts.withUnknown != nil {
-			err = nil
-			val = *opts.withUnknown
-		}
 
+	var val interface{}
+	var err error
+
+	switch expression.Selector.Type {
+	case grammar.SelectorTypeInlineValue:
+		val = strings.Split(expression.Selector.InlineValue.Raw, ",")
+
+	default:
+		val, err = ptr.Get(datum)
 		if err != nil {
-			return false, fmt.Errorf("error finding value in datum: %w", err)
+			if errors.Is(err, pointerstructure.ErrNotFound) && opts.withUnknown != nil {
+				err = nil
+				val = *opts.withUnknown
+			}
+
+			if err != nil {
+				return false, fmt.Errorf("error finding value in datum: %w", err)
+			}
 		}
 	}
 

@@ -117,6 +117,10 @@ var evaluateTests map[string]expressionTest = map[string]expressionTest{
 			{expression: "String not matches `^anchored.*`", result: true, benchQuick: true},
 			{expression: "String matches 	`^anchored.*`", result: false},
 			{expression: "String not matches `^ex.*`", result: false},
+			{expression: "foobar in [   `foo`,   `bar`   ]", result: false},
+			{expression: "foobar in [`barfoo`,`foobar`]", result: true},
+			{expression: "6 in [`abc123`, `456789`]", result: false},
+			{expression: "6 in [`abc123`, `6`, `456789`]", result: true},
 		},
 	},
 	"Flat Struct Alt Types": {
