@@ -193,7 +193,6 @@ func doMatchMatches(expression *grammar.MatchExpression, value reflect.Value) (b
 
 func doMatchEqual(expression *grammar.MatchExpression, value reflect.Value) (bool, error) {
 	// NOTE: see preconditions in evaluategrammar.MatchExpressionRecurse
-	fmt.Println(value.Kind())
 	eqFn := primitiveEqualityFn(value.Kind())
 	if eqFn == nil {
 		return false, errors.New("unable to find suitable primitive comparison function for matching")
