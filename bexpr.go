@@ -8,6 +8,8 @@ package bexpr
 //go:generate goimports -w grammar/grammar.go
 
 import (
+	"fmt"
+
 	"github.com/hashicorp/go-bexpr/grammar"
 	"github.com/mitchellh/pointerstructure"
 )
@@ -24,6 +26,7 @@ type Evaluator struct {
 	tagName                 string
 	valueTransformationHook ValueTransformationHookFn
 	unknownVal              *interface{}
+	skipMissing             bool
 }
 
 func CreateEvaluator(expression string, opts ...Option) (*Evaluator, error) {
@@ -31,6 +34,9 @@ func CreateEvaluator(expression string, opts ...Option) (*Evaluator, error) {
 	var parserOpts []grammar.Option
 	if parsedOpts.withMaxExpressions != 0 {
 		parserOpts = append(parserOpts, grammar.MaxExpressions(parsedOpts.withMaxExpressions))
+	}
+	if parsedOpts.withUnknown != nil && parsedOpts.withSkipMissingMapKey {
+		return nil, fmt.Errorf("cannot use WithUnknownValue and WithSkipMissingMapKey together")
 	}
 
 	ast, err := grammar.Parse("", []byte(expression), parserOpts...)
@@ -43,6 +49,7 @@ func CreateEvaluator(expression string, opts ...Option) (*Evaluator, error) {
 		tagName:                 parsedOpts.withTagName,
 		valueTransformationHook: parsedOpts.withHookFn,
 		unknownVal:              parsedOpts.withUnknown,
+		skipMissing:             parsedOpts.withSkipMissingMapKey,
 	}
 
 	return eval, nil
@@ -55,6 +62,9 @@ func (eval *Evaluator) Evaluate(datum interface{}) (bool, error) {
 	}
 	if eval.unknownVal != nil {
 		opts = append(opts, WithUnknownValue(*eval.unknownVal))
+	}
+	if eval.skipMissing {
+		opts = append(opts, WithSkipMissingMapKey())
 	}
 
 	return evaluate(eval.ast, datum, opts...)

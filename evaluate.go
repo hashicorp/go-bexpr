@@ -213,6 +213,21 @@ func getMatchExprValue(expression *grammar.MatchExpression, rvalue reflect.Kind)
 	}
 }
 
+// evaluateSkipMissing implements the WithSkipMissingMapKey Option. It returns
+// true if the parent path is a map and therefore unknown keys should be
+// skipped instead of erroring.
+func evaluateSkipMissing(ptr pointerstructure.Pointer, datum interface{}) bool {
+	if len(ptr.Parts) < 2 {
+		return false
+	}
+
+	// Pop the missing leaf part of the path
+	ptr.Parts = ptr.Parts[0 : len(ptr.Parts)-1]
+
+	val, _ := ptr.Get(datum)
+	return reflect.ValueOf(val).Kind() == reflect.Map
+}
+
 func evaluateMatchExpression(expression *grammar.MatchExpression, datum interface{}, opt ...Option) (bool, error) {
 	opts := getOpts(opt...)
 	ptr := pointerstructure.Pointer{
@@ -224,9 +239,22 @@ func evaluateMatchExpression(expression *grammar.MatchExpression, datum interfac
 	}
 	val, err := ptr.Get(datum)
 	if err != nil {
-		if errors.Is(err, pointerstructure.ErrNotFound) && opts.withUnknown != nil {
-			err = nil
-			val = *opts.withUnknown
+		if errors.Is(err, pointerstructure.ErrNotFound) {
+			switch {
+			case opts.withUnknown != nil:
+				err = nil
+				val = *opts.withUnknown
+			case opts.withSkipMissingMapKey:
+				// For comparison results with missing keys: missing means not equal.
+				if evaluateSkipMissing(ptr, datum) {
+					switch expression.Operator {
+					case grammar.MatchEqual:
+						return false, nil
+					case grammar.MatchNotEqual:
+						return true, nil
+					}
+				}
+			}
 		}
 
 		if err != nil {

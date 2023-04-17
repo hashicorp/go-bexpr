@@ -236,6 +236,10 @@ var evaluateTests map[string]expressionTest = map[string]expressionTest{
 			{expression: "foo.baz != false", result: false},
 			{expression: "foo.baz != true", result: true},
 			{expression: "foo.bar.baz == 3", result: false, err: `error finding value in datum: /foo/bar/baz: at part 2, invalid value kind: bool`},
+			{expression: "foo.nope == 3", result: false, err: `error finding value in datum: /foo/nope at part 1: couldn't find key "nope"`},
+			{expression: "foo.bar == true", result: true},
+			{expression: `"nope" in foo and foo.nope == 3`, result: false},
+			{expression: `"nope" in foo and foo.nope != 3`, result: false},
 		},
 	},
 	"Nested Structs and Maps": {
@@ -504,6 +508,100 @@ func TestUnknownVal_struct(t *testing.T) {
 			}{
 				Key: "foo",
 			})
+			if tc.err != "" {
+				require.Error(t, err)
+				require.EqualError(t, err, tc.err)
+			} else {
+				require.NoError(t, err)
+			}
+			require.Equal(t, tc.result, match)
+		})
+	}
+}
+
+func TestEvaluateWithSkipMissing(t *testing.T) {
+	obj := struct {
+		A string
+		M map[string]string
+	}{
+		A: "x",
+		M: map[string]string{
+			"Hello": "World",
+		},
+	}
+
+	cases := []struct {
+		expression string
+		result     bool
+		err        string
+	}{
+		{
+			expression: `A == "foo"`,
+			result:     false,
+		},
+		{
+			expression: `A != "foo"`,
+			result:     true,
+		},
+		{
+			expression: `B == "foo"`,
+			result:     false,
+			err:        `error finding value in datum: /B at part 0: couldn't find key: struct field with name "B"`,
+		},
+		{
+			expression: `B != "foo"`,
+			result:     false,
+			err:        `error finding value in datum: /B at part 0: couldn't find key: struct field with name "B"`,
+		},
+		{
+			expression: `"x" in M`,
+			result:     false,
+		},
+		{
+			expression: `"Hello" in M and M["Hello"] == "World"`,
+			result:     true,
+		},
+		{
+			expression: `"Hello" not in M and M["Hello"] == "World"`,
+			result:     false,
+		},
+		{
+			expression: `"Hello" in M and M["Hello"] != "World"`,
+			result:     false,
+		},
+		{
+			expression: `M["nope"] == "x"`,
+			result:     false,
+		},
+		{
+			expression: `M["nope"] != "x"`,
+			result:     true,
+		},
+		{
+			expression: `M["Hello"] == "x"`,
+			result:     false,
+		},
+		{
+			expression: `M["Hello"] != "x"`,
+			result:     true,
+		},
+		{
+			expression: `M["Hello"] == "World"`,
+			result:     true,
+		},
+		{
+			expression: `M["Hello"] != "World"`,
+			result:     false,
+		},
+	}
+
+	for i := range cases {
+		tc := cases[i]
+		t.Run(tc.expression, func(t *testing.T) {
+			expr, err := CreateEvaluator(tc.expression, WithSkipMissingMapKey())
+			require.NoError(t, err)
+
+			match, err := expr.Evaluate(obj)
 			if tc.err != "" {
 				require.Error(t, err)
 				require.EqualError(t, err, tc.err)

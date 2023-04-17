@@ -198,3 +198,68 @@ func BenchmarkFilter(b *testing.B) {
 		})
 	}
 }
+
+func TestFilterSkipMissingOption(t *testing.T) {
+	type obj struct {
+		A string
+		M map[string]string
+	}
+
+	objs := []obj{
+		{
+			A: "1",
+			M: map[string]string{
+				"x": "2",
+			},
+		},
+		{
+			A: "2",
+			M: map[string]string{
+				"y": "3",
+			},
+		},
+		{},
+	}
+
+	cases := []struct {
+		filter   string
+		expected interface{}
+	}{
+		{
+			filter:   `"x" in M`,
+			expected: []obj{objs[0]},
+		},
+		{
+			filter:   `M["x"] == "2"`,
+			expected: []obj{objs[0]},
+		},
+		{
+			filter:   `M["x"] != "2"`,
+			expected: []obj{objs[1], objs[2]},
+		},
+		{
+			filter:   `M["x"] != "q"`,
+			expected: objs,
+		},
+		{
+			filter:   `"y" in M`,
+			expected: []obj{objs[1]},
+		},
+		{
+			filter:   `A == ""`,
+			expected: []obj{objs[2]},
+		},
+	}
+
+	for i := range cases {
+		tc := cases[i]
+		t.Run(tc.filter, func(t *testing.T) {
+			f, err := CreateFilter(tc.filter, WithSkipMissingMapKey())
+			require.NoError(t, err)
+
+			r, err := f.Execute(objs)
+			require.NoError(t, err)
+			require.Equal(t, tc.expected, r)
+		})
+	}
+}

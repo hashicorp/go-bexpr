@@ -16,10 +16,11 @@ type Option func(*options)
 
 // options = how options are represented
 type options struct {
-	withMaxExpressions uint64
-	withTagName        string
-	withHookFn         ValueTransformationHookFn
-	withUnknown        *interface{}
+	withMaxExpressions    uint64
+	withTagName           string
+	withHookFn            ValueTransformationHookFn
+	withUnknown           *interface{}
+	withSkipMissingMapKey bool
 }
 
 func WithMaxExpressions(maxExprCnt uint64) Option {
@@ -52,6 +53,21 @@ func WithHookFn(fn ValueTransformationHookFn) Option {
 func WithUnknownValue(val interface{}) Option {
 	return func(o *options) {
 		o.withUnknown = &val
+	}
+}
+
+// WithSkipMissingMapKey will cause evaluation to return false when comparing
+// against a map key that is missing. This is similar to WithUnknownValue with
+// two notable differences:
+//
+//  1. Unlike WithUnknownValue, WithSkipMissingMapKey only operates on Paths
+//     where the parent path is map.
+//  2. Unlike WithUnknownValue, WithSkipMissingMapKey always returns false.
+//
+// Using both WithUnknownValue and WithSkipMissingMapKey returns an error.
+func WithSkipMissingMapKey() Option {
+	return func(o *options) {
+		o.withSkipMissingMapKey = true
 	}
 }
 
