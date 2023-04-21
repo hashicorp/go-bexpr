@@ -81,6 +81,42 @@ func (op MatchOperator) String() string {
 	}
 }
 
+// NotPresentDisposition is called during evaluation when Selector fails to
+// find a map key to determine the operator's behavior.
+func (op MatchOperator) NotPresentDisposition() bool {
+	// For a selector M["x"] against a map M that lacks an "x" key...
+	switch op {
+	case MatchEqual:
+		// ...M["x"] == <anything> is false. Nothing is equal to a missing key
+		return false
+	case MatchNotEqual:
+		// ...M["x"] != <anything> is true. Nothing is equal to a missing key
+		return true
+	case MatchIn:
+		// "a" in M["x"] is false. Missing keys contain no values
+		return false
+	case MatchNotIn:
+		// "a" not in M["x"] is true. Missing keys contain no values
+		return true
+	case MatchIsEmpty:
+		// M["x"] is empty is true. Missing keys contain no values
+		return true
+	case MatchIsNotEmpty:
+		// M["x"] is not empty is false. Missing keys contain no values
+		return false
+	case MatchMatches:
+		// M["x"] matches <anything> is false. Nothing matches a missing key
+		return false
+	case MatchNotMatches:
+		// M["x"] not matches <anything> is true. Nothing matches a missing key
+		return true
+	default:
+		// Should never be reached as every operator should explicitly define its
+		// behavior.
+		return false
+	}
+}
+
 type MatchValue struct {
 	Raw       string
 	Converted interface{}
