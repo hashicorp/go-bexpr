@@ -213,6 +213,27 @@ func getMatchExprValue(expression *grammar.MatchExpression, rvalue reflect.Kind)
 	}
 }
 
+// evaluateNotPresent is called after a pointerstructure.ErrNotFound is
+// encountered during evaluation.
+//
+// Returns true if the Selector Path's parent is a map as the missing key may
+// be handled by the MatchOperator's NotPresentDisposition method.
+//
+// Returns false if the Selector Path has a length of 1, or if the parent of
+// the Selector's Path is not a map, a pointerstructure.ErrrNotFound error is
+// returned.
+func evaluateNotPresent(ptr pointerstructure.Pointer, datum interface{}) bool {
+	if len(ptr.Parts) < 2 {
+		return false
+	}
+
+	// Pop the missing leaf part of the path
+	ptr.Parts = ptr.Parts[0 : len(ptr.Parts)-1]
+
+	val, _ := ptr.Get(datum)
+	return reflect.ValueOf(val).Kind() == reflect.Map
+}
+
 func evaluateMatchExpression(expression *grammar.MatchExpression, datum interface{}, opt ...Option) (bool, error) {
 	opts := getOpts(opt...)
 	ptr := pointerstructure.Pointer{
@@ -224,9 +245,16 @@ func evaluateMatchExpression(expression *grammar.MatchExpression, datum interfac
 	}
 	val, err := ptr.Get(datum)
 	if err != nil {
-		if errors.Is(err, pointerstructure.ErrNotFound) && opts.withUnknown != nil {
-			err = nil
-			val = *opts.withUnknown
+		if errors.Is(err, pointerstructure.ErrNotFound) {
+			// Prefer the withUnknown option if set, otherwise defer to NotPresent
+			// disposition
+			switch {
+			case opts.withUnknown != nil:
+				err = nil
+				val = *opts.withUnknown
+			case evaluateNotPresent(ptr, datum):
+				return expression.Operator.NotPresentDisposition(), nil
+			}
 		}
 
 		if err != nil {
