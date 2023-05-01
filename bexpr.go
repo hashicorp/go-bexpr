@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 // bexpr is an implementation of a generic boolean expression evaluator.
 // The general goal is to be able to evaluate some expression against some
 // arbitrary data and get back a boolean of whether or not the data
