@@ -167,12 +167,18 @@ Value "value" <- selector:Selector {
    return &MatchValue{Raw: n.(string)}, nil
 } / s:StringLiteral {
    return &MatchValue{Raw: s.(string)}, nil
+} / s:VariableInterpolation {
+   return &MatchValue{Raw: s.(string), IsVariable: true}, nil
 }
 
 NumberLiteral "number" <- "-"? IntegerOrFloat &AfterNumbers {
    return string(c.text), nil
 } / "-"? IntegerOrFloat !AfterNumbers &{
    return false, errors.New("Invalid number literal")
+}
+
+VariableInterpolation "variable" <- "${" _? id:Identifier _? "}" {
+   return string(id.(string)), nil
 }
 
 AfterNumbers <- &(_ / EOF / ")")

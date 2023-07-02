@@ -51,10 +51,11 @@ func CreateEvaluator(expression string, opts ...Option) (*Evaluator, error) {
 	return eval, nil
 }
 
-func (eval *Evaluator) Evaluate(datum interface{}) (bool, error) {
+func (eval *Evaluator) Evaluate(datum interface{}, variables map[string]string) (bool, error) {
 	opts := []Option{
 		WithTagName(eval.tagName),
 		WithHookFn(eval.valueTransformationHook),
+		withVariables(variables),
 	}
 	if eval.unknownVal != nil {
 		opts = append(opts, WithUnknownValue(*eval.unknownVal))
