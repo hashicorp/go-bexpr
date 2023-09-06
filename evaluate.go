@@ -257,7 +257,6 @@ func getValue(datum interface{}, path []string, opt ...Option) (interface{}, boo
 						return nil, false, fmt.Errorf("%s references a %T so %s is invalid", first.String(), val, full.String())
 					}
 					found = true
-					// panic(fmt.Sprintf("%v %#v", name, val))
 					break
 				} else {
 					// This local variable references another value, we prepend the
