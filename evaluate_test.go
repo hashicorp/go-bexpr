@@ -238,7 +238,7 @@ var evaluateTests map[string]expressionTest = map[string]expressionTest{
 			{expression: "foo.bar != false", result: true},
 			{expression: "foo.baz != false", result: false},
 			{expression: "foo.baz != true", result: true},
-			{expression: "foo.bar.baz == 3", result: false, err: `error finding value in datum: /foo/bar/baz at part 2: invalid value kind (bool)`},
+			{expression: "foo.bar.baz == 3", result: false, err: `error finding value in datum: /foo/bar/baz: at part 2, invalid value kind: bool`},
 		},
 	},
 	"Nested Structs and Maps": {
@@ -325,10 +325,13 @@ var evaluateTests map[string]expressionTest = map[string]expressionTest{
 			// any
 			{expression: `any Nested.SliceOfInts as i { i == 1 }`, result: true},
 			{expression: `any Nested.SliceOfInts as i { i == 42 }`, result: false},
-			{expression: `any Nested.Map as v { v != "bar" }`, result: true},
-			{expression: `any Nested.Map as v { v == "bar" }`, result: true},
-			{expression: `any Nested.Map as v { v == "hello" }`, result: false},
+			{expression: `any Nested.SliceOfStructs as i { "/i/X" == 1 }`, result: true},
+			{expression: `any Nested.Map as k { k != "bar" }`, result: true},
+			{expression: `any Nested.Map as k { k == "bar" }`, result: true},
+			{expression: `any Nested.Map as k { k == "hello" }`, result: false},
 			{expression: `any Nested.Map as k, v { k == "foo" and v == "bar" }`, result: true},
+			{expression: `any Nested.Map as k { k.Color == "red" }`, err: "/k references a string so /k/Color is invalid"},
+			{expression: `any Nested.SliceOfInts as i, _ { i.Color == "red" }`, err: "/i references a int so /i/Color is invalid"},
 			// Missing key in map tests
 			{expression: "Nested.Map.notfound == 4", result: false},
 			{expression: "Nested.Map.notfound != 4", result: true},
@@ -417,7 +420,7 @@ func TestWithHookFn(t *testing.T) {
 				{expression: `"/I/I"=="bar"`, result: true},
 				{
 					expression: `"/S/I"=="foo"`, result: false,
-					err: "error finding value in datum: /S/I at part 1: invalid value kind (string)",
+					err: "error finding value in datum: /S/I: at part 1, invalid value kind: string",
 				},
 			},
 		},

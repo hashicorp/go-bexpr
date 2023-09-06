@@ -98,7 +98,7 @@ func TestAST_Dump(t *testing.T) {
 					},
 				},
 			},
-			expected: "All k on obj {\n   Equal {\n      Selector: v\n      Value: \"hello\"\n   }\n}\n",
+			expected: "ALL k on obj {\n   Equal {\n      Selector: v\n      Value: \"hello\"\n   }\n}\n",
 		},
 		"All": {
 			expr: &CollectionExpression{
@@ -120,7 +120,7 @@ func TestAST_Dump(t *testing.T) {
 					},
 				},
 			},
-			expected: "All (k, v) on obj {\n   Equal {\n      Selector: v\n      Value: \"hello\"\n   }\n}\n",
+			expected: "ALL (k, v) on obj {\n   Equal {\n      Selector: v\n      Value: \"hello\"\n   }\n}\n",
 		},
 		"Any": {
 			expr: &CollectionExpression{
@@ -142,7 +142,7 @@ func TestAST_Dump(t *testing.T) {
 					},
 				},
 			},
-			expected: "Any (k, _) on obj {\n   Equal {\n      Selector: v\n      Value: \"hello\"\n   }\n}\n",
+			expected: "ANY (k, _) on obj {\n   Equal {\n      Selector: v\n      Value: \"hello\"\n   }\n}\n",
 		},
 	}
 

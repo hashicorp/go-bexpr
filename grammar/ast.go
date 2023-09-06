@@ -196,8 +196,8 @@ func (expr *MatchExpression) ExpressionDump(w io.Writer, indent string, level in
 type CollectionExpressionType string
 
 const (
-	AllExpression CollectionExpressionType = "All"
-	AnyExpression CollectionExpressionType = "Any"
+	AllExpression CollectionExpressionType = "all"
+	AnyExpression CollectionExpressionType = "any"
 )
 
 type CollectionExpression struct {
@@ -210,9 +210,9 @@ type CollectionExpression struct {
 func (expr *CollectionExpression) ExpressionDump(w io.Writer, indent string, level int) {
 	localIndent := strings.Repeat(indent, level)
 	if expr.Value == "" {
-		fmt.Fprintf(w, "%s%s %s on %v {\n", localIndent, expr.Type, expr.Key, expr.Selector)
+		fmt.Fprintf(w, "%s%s %s on %v {\n", localIndent, strings.ToUpper(string(expr.Type)), expr.Key, expr.Selector)
 	} else {
-		fmt.Fprintf(w, "%s%s (%s, %s) on %v {\n", localIndent, expr.Type, expr.Key, expr.Value, expr.Selector)
+		fmt.Fprintf(w, "%s%s (%s, %s) on %v {\n", localIndent, strings.ToUpper(string(expr.Type)), expr.Key, expr.Value, expr.Selector)
 	}
 	expr.Inner.ExpressionDump(w, indent, level+1)
 	fmt.Fprintf(w, "%s}\n", localIndent)

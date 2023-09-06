@@ -239,29 +239,63 @@ func evaluateNotPresent(ptr pointerstructure.Pointer, datum interface{}) bool {
 
 func getValue(datum interface{}, path []string, opt ...Option) (interface{}, bool, error) {
 	opts := getOpts(opt...)
-	ptr := pointerstructure.Pointer{
-		Parts: path,
-		Config: pointerstructure.Config{
-			TagName:                 opts.withTagName,
-			ValueTransformationHook: opts.withHookFn,
-		},
-	}
-	val, err := ptr.Get(datum)
-	if err != nil {
-		if errors.Is(err, pointerstructure.ErrNotFound) {
-			// Prefer the withUnknown option if set, otherwise defer to NotPresent
-			// disposition
-			switch {
-			case opts.withUnknown != nil:
-				err = nil
-				val = *opts.withUnknown
-			case evaluateNotPresent(ptr, datum):
-				return nil, false, nil
+	var val interface{}
+	var found bool
+	if len(path) != 0 {
+		for i := len(opts.withLocalVariables) - 1; i >= 0; i-- {
+			name := path[0]
+			lv := opts.withLocalVariables[i]
+			if name == lv.name {
+				if len(lv.path) == 0 {
+					// This local variable is a key or an index and we know its
+					// value without having to call pointerstructure, we stop
+					// here.
+					val = lv.value
+					if len(path) > 1 {
+						first := pointerstructure.Pointer{Parts: []string{name}}
+						full := pointerstructure.Pointer{Parts: path}
+						return nil, false, fmt.Errorf("%s references a %T so %s is invalid", first.String(), val, full.String())
+					}
+					found = true
+					// panic(fmt.Sprintf("%v %#v", name, val))
+					break
+				} else {
+					// This local variable references another value, we prepend the
+					// path of the selector it replaces and continue searching
+					prefix := append([]string(nil), lv.path...)
+					path = append(prefix, path[1:]...)
+				}
 			}
 		}
-
+	}
+	if !found {
+		// This is not a local variable, we use pointerstructure to look for it
+		// in the global datum
+		ptr := pointerstructure.Pointer{
+			Parts: path,
+			Config: pointerstructure.Config{
+				TagName:                 opts.withTagName,
+				ValueTransformationHook: opts.withHookFn,
+			},
+		}
+		var err error
+		val, err = ptr.Get(datum)
 		if err != nil {
-			return false, false, fmt.Errorf("error finding value in datum: %w", err)
+			if errors.Is(err, pointerstructure.ErrNotFound) {
+				// Prefer the withUnknown option if set, otherwise defer to NotPresent
+				// disposition
+				switch {
+				case opts.withUnknown != nil:
+					err = nil
+					val = *opts.withUnknown
+				case evaluateNotPresent(ptr, datum):
+					return nil, false, nil
+				}
+			}
+
+			if err != nil {
+				return false, false, fmt.Errorf("error finding value in datum: %w", err)
+			}
 		}
 	}
 
@@ -347,25 +381,28 @@ func evaluateCollectionExpression(expression *grammar.CollectionExpression, datu
 
 	var keys []reflect.Value
 	if v.Kind() == reflect.Map {
+		if v.Type().Key() != reflect.TypeOf("") {
+			return false, fmt.Errorf("%s can only iterate over maps indexed with strings", expression.Type)
+		}
 		keys = v.MapKeys()
 	}
 
 	switch v.Kind() {
 	case reflect.Slice, reflect.Array, reflect.Map:
 		for i := 0; i < v.Len(); i++ {
-
-			vars := map[string]interface{}{}
+			innerOpt := append([]Option(nil), opt...)
 
 			if v.Kind() == reflect.Map {
 				key := keys[i]
 				if expression.Key != "_" {
-					vars[expression.Key] = key.Interface()
+					innerOpt = append(innerOpt, WithLocalVariable(expression.Key, nil, key.Interface()))
 				}
 				if expression.Value != "" && expression.Value != "_" {
-					vars[expression.Value] = v.MapIndex(key).Interface()
+					path := append([]string(nil), expression.Selector.Path...)
+					path = append(path, key.Interface().(string))
+					innerOpt = append(innerOpt, WithLocalVariable(expression.Value, path, nil))
 				}
 			} else {
-				value := v.Index(i).Interface()
 				if expression.Value == "" {
 					// This means we are using the version with one placeholder
 					// like "all things as t { ... }". For lists t will iterate
@@ -373,19 +410,23 @@ func evaluateCollectionExpression(expression *grammar.CollectionExpression, datu
 					// of the Sentinel for loop (or the "for t in things" in
 					// Python). This should match what users expect.
 					if expression.Key != "_" {
-						vars[expression.Key] = value
+						path := append([]string(nil), expression.Selector.Path...)
+						path = append(path, strconv.Itoa(i))
+						innerOpt = append(innerOpt, WithLocalVariable(expression.Key, path, nil))
 					}
 				} else {
 					if expression.Key != "_" {
-						vars[expression.Key] = i
+						innerOpt = append(innerOpt, WithLocalVariable(expression.Key, nil, i))
 					}
 					if expression.Value != "_" {
-						vars[expression.Value] = value
+						path := append([]string(nil), expression.Selector.Path...)
+						path = append(path, strconv.Itoa(i))
+						innerOpt = append(innerOpt, WithLocalVariable(expression.Value, path, nil))
 					}
 				}
 			}
 
-			result, err := evaluate(expression.Inner, pointerstructure.Defaults{vars, datum}, opt...)
+			result, err := evaluate(expression.Inner, datum, innerOpt...)
 			if err != nil {
 				return false, err
 			}
