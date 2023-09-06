@@ -223,7 +223,7 @@ func getMatchExprValue(expression *grammar.MatchExpression, rvalue reflect.Kind)
 // be handled by the MatchOperator's NotPresentDisposition method.
 //
 // Returns false if the Selector Path has a length of 1, or if the parent of
-// the Selector's Path is not a map, a pointerstructure.ErrrNotFound error is
+// the Selector's Path is not a map, a pointerstructure.ErrNotFound error is
 // returned.
 func evaluateNotPresent(ptr pointerstructure.Pointer, datum interface{}) bool {
 	if len(ptr.Parts) < 2 {
@@ -237,10 +237,10 @@ func evaluateNotPresent(ptr pointerstructure.Pointer, datum interface{}) bool {
 	return reflect.ValueOf(val).Kind() == reflect.Map
 }
 
-func evaluateMatchExpression(expression *grammar.MatchExpression, datum interface{}, opt ...Option) (bool, error) {
+func getValue(datum interface{}, path []string, opt ...Option) (interface{}, bool, error) {
 	opts := getOpts(opt...)
 	ptr := pointerstructure.Pointer{
-		Parts: expression.Selector.Path,
+		Parts: path,
 		Config: pointerstructure.Config{
 			TagName:                 opts.withTagName,
 			ValueTransformationHook: opts.withHookFn,
@@ -256,13 +256,29 @@ func evaluateMatchExpression(expression *grammar.MatchExpression, datum interfac
 				err = nil
 				val = *opts.withUnknown
 			case evaluateNotPresent(ptr, datum):
-				return expression.Operator.NotPresentDisposition(), nil
+				return nil, false, nil
 			}
 		}
 
 		if err != nil {
-			return false, fmt.Errorf("error finding value in datum: %w", err)
+			return false, false, fmt.Errorf("error finding value in datum: %w", err)
 		}
+	}
+
+	return val, true, nil
+}
+
+func evaluateMatchExpression(expression *grammar.MatchExpression, datum interface{}, opt ...Option) (bool, error) {
+	val, present, err := getValue(
+		datum,
+		expression.Selector.Path,
+		opt...,
+	)
+	if err != nil {
+		return false, err
+	}
+	if !present {
+		return expression.Operator.NotPresentDisposition(), nil
 	}
 
 	if jn, ok := val.(json.Number); ok {
@@ -314,6 +330,77 @@ func evaluateMatchExpression(expression *grammar.MatchExpression, datum interfac
 	}
 }
 
+func evaluateCollectionExpression(expression *grammar.CollectionExpression, datum interface{}, opt ...Option) (bool, error) {
+	val, present, err := getValue(
+		datum,
+		expression.Selector.Path,
+		opt...,
+	)
+	if err != nil {
+		return false, err
+	}
+	if !present {
+		return expression.Type == grammar.AllExpression, nil
+	}
+
+	v := reflect.ValueOf(val)
+
+	var keys []reflect.Value
+	if v.Kind() == reflect.Map {
+		keys = v.MapKeys()
+	}
+
+	switch v.Kind() {
+	case reflect.Slice, reflect.Array, reflect.Map:
+		for i := 0; i < v.Len(); i++ {
+
+			vars := map[string]interface{}{}
+
+			if v.Kind() == reflect.Map {
+				key := keys[i]
+				if expression.Key != "_" {
+					vars[expression.Key] = key.Interface()
+				}
+				if expression.Value != "" && expression.Value != "_" {
+					vars[expression.Value] = v.MapIndex(key).Interface()
+				}
+			} else {
+				value := v.Index(i).Interface()
+				if expression.Value == "" {
+					// This means we are using the version with one placeholder
+					// like "all things as t { ... }". For lists t will iterate
+					// over the elements, not the indexes to match the behavior
+					// of the Sentinel for loop (or the "for t in things" in
+					// Python). This should match what users expect.
+					if expression.Key != "_" {
+						vars[expression.Key] = value
+					}
+				} else {
+					if expression.Key != "_" {
+						vars[expression.Key] = i
+					}
+					if expression.Value != "_" {
+						vars[expression.Value] = value
+					}
+				}
+			}
+
+			result, err := evaluate(expression.Inner, pointerstructure.Defaults{vars, datum}, opt...)
+			if err != nil {
+				return false, err
+			}
+			if (result && expression.Type == grammar.AnyExpression) || (!result && expression.Type == grammar.AllExpression) {
+				return result, nil
+			}
+		}
+
+		return expression.Type == grammar.AllExpression, nil
+
+	default:
+		return false, fmt.Errorf(`%s is not a list or a map`, expression.Selector.String())
+	}
+}
+
 func evaluate(ast grammar.Expression, datum interface{}, opt ...Option) (bool, error) {
 	switch node := ast.(type) {
 	case *grammar.UnaryExpression:
@@ -342,6 +429,8 @@ func evaluate(ast grammar.Expression, datum interface{}, opt ...Option) (bool, e
 		}
 	case *grammar.MatchExpression:
 		return evaluateMatchExpression(node, datum, opt...)
+	case *grammar.CollectionExpression:
+		return evaluateCollectionExpression(node, datum, opt...)
 	}
 	return false, fmt.Errorf("Invalid AST node")
 }

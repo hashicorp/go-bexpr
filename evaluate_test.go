@@ -238,7 +238,7 @@ var evaluateTests map[string]expressionTest = map[string]expressionTest{
 			{expression: "foo.bar != false", result: true},
 			{expression: "foo.baz != false", result: false},
 			{expression: "foo.baz != true", result: true},
-			{expression: "foo.bar.baz == 3", result: false, err: `error finding value in datum: /foo/bar/baz: at part 2, invalid value kind: bool`},
+			{expression: "foo.bar.baz == 3", result: false, err: `error finding value in datum: /foo/bar/baz at part 2: invalid value kind (bool)`},
 		},
 	},
 	"Nested Structs and Maps": {
@@ -311,6 +311,24 @@ var evaluateTests map[string]expressionTest = map[string]expressionTest{
 			{expression: `"2" in "/Nested/SliceOfInfs"`, result: false},
 			{expression: `"true" in "/Nested/SliceOfInfs"`, result: true},
 			{expression: `"/Nested/Map/email" matches "(foz|foo)@example.com"`, result: true},
+			// all
+			{expression: `all Nested.SliceOfInts as _ { TopInt == 5 }`, result: true},
+			{expression: `all Nested.SliceOfInts as i { i != 42 }`, result: true},
+			{expression: `all Nested.SliceOfInts as i { i == 1 }`, result: false},
+			{expression: `all Nested.Map as v { v == "bar" }`, result: false},
+			{expression: `all Nested.Map as v { v != "hello" }`, result: true},
+			{expression: `all Nested.Map as _, _ { TopInt == 5 }`, result: true},
+			{expression: `all Nested.Map as k, _ { k != "foo" }`, result: false},
+			{expression: `all Nested.Map as k, _ { k != "hello" }`, result: true},
+			{expression: `all Nested.Map as k, v { k != "foo" or v != "baz" }`, result: true},
+			{expression: `all TopInt as k, v { k != "foo" or v != "baz" }`, err: "TopInt is not a list or a map"},
+			// any
+			{expression: `any Nested.SliceOfInts as i { i == 1 }`, result: true},
+			{expression: `any Nested.SliceOfInts as i { i == 42 }`, result: false},
+			{expression: `any Nested.Map as v { v != "bar" }`, result: true},
+			{expression: `any Nested.Map as v { v == "bar" }`, result: true},
+			{expression: `any Nested.Map as v { v == "hello" }`, result: false},
+			{expression: `any Nested.Map as k, v { k == "foo" and v == "bar" }`, result: true},
 			// Missing key in map tests
 			{expression: "Nested.Map.notfound == 4", result: false},
 			{expression: "Nested.Map.notfound != 4", result: true},
@@ -399,7 +417,7 @@ func TestWithHookFn(t *testing.T) {
 				{expression: `"/I/I"=="bar"`, result: true},
 				{
 					expression: `"/S/I"=="foo"`, result: false,
-					err: "error finding value in datum: /S/I: at part 1, invalid value kind: string",
+					err: "error finding value in datum: /S/I at part 1: invalid value kind (string)",
 				},
 			},
 		},

@@ -192,3 +192,28 @@ func (expr *MatchExpression) ExpressionDump(w io.Writer, indent string, level in
 		fmt.Fprintf(w, "%[1]s%[3]s {\n%[2]sSelector: %[4]v\n%[1]s}\n", strings.Repeat(indent, level), strings.Repeat(indent, level+1), expr.Operator.String(), expr.Selector)
 	}
 }
+
+type CollectionExpressionType string
+
+const (
+	AllExpression CollectionExpressionType = "All"
+	AnyExpression CollectionExpressionType = "Any"
+)
+
+type CollectionExpression struct {
+	Type       CollectionExpressionType
+	Selector   Selector
+	Inner      Expression
+	Key, Value string
+}
+
+func (expr *CollectionExpression) ExpressionDump(w io.Writer, indent string, level int) {
+	localIndent := strings.Repeat(indent, level)
+	if expr.Value == "" {
+		fmt.Fprintf(w, "%s%s %s on %v {\n", localIndent, expr.Type, expr.Key, expr.Selector)
+	} else {
+		fmt.Fprintf(w, "%s%s (%s, %s) on %v {\n", localIndent, expr.Type, expr.Key, expr.Value, expr.Selector)
+	}
+	expr.Inner.ExpressionDump(w, indent, level+1)
+	fmt.Fprintf(w, "%s}\n", localIndent)
+}

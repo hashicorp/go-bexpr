@@ -78,6 +78,72 @@ func TestAST_Dump(t *testing.T) {
 			},
 			expected: "UNKNOWN {\n   Is Empty {\n      Selector: foo.bar\n   }\n   Is Empty {\n      Selector: foo.bar\n   }\n}\n",
 		},
+		"All single variation": {
+			expr: &CollectionExpression{
+				Key:   "k",
+				Value: "",
+				Type:  AllExpression,
+				Selector: Selector{
+					Type: SelectorTypeBexpr,
+					Path: []string{"obj"},
+				},
+				Inner: &MatchExpression{
+					Selector: Selector{
+						Type: SelectorTypeBexpr,
+						Path: []string{"v"},
+					},
+					Operator: 0,
+					Value: &MatchValue{
+						Raw: "hello",
+					},
+				},
+			},
+			expected: "All k on obj {\n   Equal {\n      Selector: v\n      Value: \"hello\"\n   }\n}\n",
+		},
+		"All": {
+			expr: &CollectionExpression{
+				Key:   "k",
+				Value: "v",
+				Type:  AllExpression,
+				Selector: Selector{
+					Type: SelectorTypeBexpr,
+					Path: []string{"obj"},
+				},
+				Inner: &MatchExpression{
+					Selector: Selector{
+						Type: SelectorTypeBexpr,
+						Path: []string{"v"},
+					},
+					Operator: 0,
+					Value: &MatchValue{
+						Raw: "hello",
+					},
+				},
+			},
+			expected: "All (k, v) on obj {\n   Equal {\n      Selector: v\n      Value: \"hello\"\n   }\n}\n",
+		},
+		"Any": {
+			expr: &CollectionExpression{
+				Key:   "k",
+				Value: "_",
+				Type:  AnyExpression,
+				Selector: Selector{
+					Type: SelectorTypeBexpr,
+					Path: []string{"obj"},
+				},
+				Inner: &MatchExpression{
+					Selector: Selector{
+						Type: SelectorTypeBexpr,
+						Path: []string{"v"},
+					},
+					Operator: 0,
+					Value: &MatchValue{
+						Raw: "hello",
+					},
+				},
+			},
+			expected: "Any (k, _) on obj {\n   Equal {\n      Selector: v\n      Value: \"hello\"\n   }\n}\n",
+		},
 	}
 
 	for name, tcase := range tests {

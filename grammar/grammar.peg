@@ -23,6 +23,10 @@ OrExpression <- left:AndExpression _ "or" _ right:OrExpression {
    }, nil
 } / expr:AndExpression {
    return expr, nil
+} / expr:CollectionExpression {
+   return expr, nil
+} / expr:CollectionExpressionWithKey {
+   return expr, nil
 }
 
 AndExpression <- left:NotExpression _ "and" _ right:AndExpression {
@@ -48,6 +52,39 @@ NotExpression <- "not" _ expr:NotExpression {
    }, nil
 } / expr:ParenthesizedExpression {
    return expr, nil
+}
+
+CollectionExpression <- operator:("all"/"any") _ selector:Selector _ "as" _ ident:(Identifier / "_") _? "{" _? expr:OrExpression _? "}" {
+   return c.onCollectionExpressionWithKey1(operator, selector, ident, "", expr)
+}
+
+CollectionExpressionWithKey <- operator:("all"/"any") _ selector:Selector _ "as" _ key:(Identifier / "_") _? "," _? value:(Identifier / "_") _? "{" _? expr:OrExpression _? "}" {
+   ce := &CollectionExpression{
+      Selector: selector.(Selector),
+      Inner:    expr.(Expression),
+   }
+
+   if string(operator.([]byte)) == "all" {
+      ce.Type = AllExpression
+   } else {
+      ce.Type = AnyExpression
+   }
+
+   switch k := key.(type) {
+   case string:
+      ce.Key = k
+   default:
+      ce.Key = "_"
+   }
+
+   switch v := value.(type) {
+   case string:
+      ce.Value = v
+   default:
+      ce.Value = "_"
+   }
+
+   return ce, nil
 }
 
 ParenthesizedExpression "grouping" <- "(" _? expr:OrExpression _? ")" {

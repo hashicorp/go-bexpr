@@ -342,7 +342,7 @@ func TestExpressionParsing(t *testing.T) {
 		"Junk at the end 3": {
 			input:    "x in foo or ",
 			expected: nil,
-			err:      "1:13 (12): no match found, expected: \"(\", \"-\", \"0\", \"\\\"\", \"`\", \"not\", [ \\t\\r\\n], [1-9] or [a-zA-Z]",
+			err:      "1:13 (12): no match found, expected: \"(\", \"-\", \"0\", \"\\\"\", \"`\", \"all\", \"any\", \"not\", [ \\t\\r\\n], [1-9] or [a-zA-Z]",
 		},
 		"Junk at the end 4": {
 			input:    "x in foo or not ",
@@ -373,6 +373,155 @@ func TestExpressionParsing(t *testing.T) {
 			input:    "not not foo == 3",
 			expected: &MatchExpression{Selector: Selector{Type: SelectorTypeBexpr, Path: []string{"foo"}}, Operator: MatchEqual, Value: &MatchValue{Raw: "3"}},
 			err:      "",
+		},
+		"all": {
+			input: `all group.tasks as t { t.name == "hello" }`,
+			expected: &CollectionExpression{
+				Key:   "t",
+				Value: "",
+				Type:  AllExpression,
+				Selector: Selector{
+					Type: SelectorTypeBexpr,
+					Path: []string{"group", "tasks"},
+				},
+				Inner: &MatchExpression{
+					Selector: Selector{
+						Type: SelectorTypeBexpr,
+						Path: []string{"t", "name"},
+					},
+					Operator: 0,
+					Value: &MatchValue{
+						Raw: "hello",
+					},
+				},
+			},
+		},
+		"all missing identifier": {
+			input: `all group.tasks as { t.name == "hello" }`,
+			expected: &CollectionExpression{
+				Selector: Selector{
+					Type: SelectorTypeBexpr,
+					Path: []string{"group", "tasks"},
+				},
+			},
+			err: "1:20 (19): no match found, expected: \"_\", [ \\t\\r\\n] or [a-zA-Z]",
+		},
+		"all missing selector": {
+			input: `all as t { t.name == "hello" }`,
+			expected: &CollectionExpression{
+				Selector: Selector{
+					Type: SelectorTypeBexpr,
+					Path: []string{"group", "tasks"},
+				},
+			},
+			err: "1:8 (7): no match found, expected: \"as\" or [ \\t\\r\\n]",
+		},
+		"nested all": {
+			input: `all group.tasks as t { all t.test as i { i == "test" }}`,
+			expected: &CollectionExpression{
+				Key:   "t",
+				Value: "",
+				Type:  AllExpression,
+				Selector: Selector{
+					Type: SelectorTypeBexpr,
+					Path: []string{"group", "tasks"},
+				},
+				Inner: &CollectionExpression{
+					Key:   "i",
+					Value: "",
+					Type:  AllExpression,
+					Selector: Selector{
+						Type: SelectorTypeBexpr,
+						Path: []string{"t", "test"},
+					},
+					Inner: &MatchExpression{
+						Selector: Selector{
+							Type: SelectorTypeBexpr,
+							Path: []string{"i"},
+						},
+						Operator: MatchEqual,
+						Value: &MatchValue{
+							Raw: "test",
+						},
+					},
+				},
+			},
+		},
+		"all with key value": {
+			input: `all group.tasks as k, v { k == v }`,
+			expected: &CollectionExpression{
+				Type:  AllExpression,
+				Key:   "k",
+				Value: "v",
+				Selector: Selector{
+					Type: SelectorTypeBexpr,
+					Path: []string{"group", "tasks"},
+				},
+				Inner: &MatchExpression{
+					Selector: Selector{
+						Type: SelectorTypeBexpr,
+						Path: []string{"k"},
+					},
+					Operator: MatchEqual,
+					Value: &MatchValue{
+						Raw:       "v",
+						Converted: nil,
+					},
+				},
+			},
+		},
+		"any": {
+			input: `any group.tasks as t { t.name == "vmware" }`,
+			expected: &CollectionExpression{
+				Key:   "t",
+				Value: "",
+				Type:  AnyExpression,
+				Selector: Selector{
+					Type: SelectorTypeBexpr,
+					Path: []string{"group", "tasks"},
+				},
+				Inner: &MatchExpression{
+					Selector: Selector{
+						Type: SelectorTypeBexpr,
+						Path: []string{"t", "name"},
+					},
+					Operator: MatchEqual,
+					Value: &MatchValue{
+						Raw: "vmware",
+					},
+				},
+			},
+		},
+		"nested any": {
+			input: `any group.tasks as t { any t.test as t { t == "test" }}`,
+			expected: &CollectionExpression{
+				Key:   "t",
+				Value: "",
+				Type:  AnyExpression,
+				Selector: Selector{
+					Type: SelectorTypeBexpr,
+					Path: []string{"group", "tasks"},
+				},
+				Inner: &CollectionExpression{
+					Key:   "t",
+					Value: "",
+					Type:  AnyExpression,
+					Selector: Selector{
+						Type: SelectorTypeBexpr,
+						Path: []string{"t", "test"},
+					},
+					Inner: &MatchExpression{
+						Selector: Selector{
+							Type: SelectorTypeBexpr,
+							Path: []string{"t"},
+						},
+						Operator: MatchEqual,
+						Value: &MatchValue{
+							Raw: "test",
+						},
+					},
+				},
+			},
 		},
 		"Complex": {
 			input: "(((foo == 3) and (not ((bar in baz) and (not (one != two))))) or (((next is empty) and (not (foo is not empty))) and (bar not in foo)))",
