@@ -239,8 +239,6 @@ func evaluateNotPresent(ptr pointerstructure.Pointer, datum interface{}) bool {
 
 func getValue(datum interface{}, path []string, opt ...Option) (interface{}, bool, error) {
 	opts := getOpts(opt...)
-	var val interface{}
-	var found bool
 	if len(path) != 0 {
 		for i := len(opts.withLocalVariables) - 1; i >= 0; i-- {
 			name := path[0]
@@ -250,14 +248,12 @@ func getValue(datum interface{}, path []string, opt ...Option) (interface{}, boo
 					// This local variable is a key or an index and we know its
 					// value without having to call pointerstructure, we stop
 					// here.
-					val = lv.value
 					if len(path) > 1 {
 						first := pointerstructure.Pointer{Parts: []string{name}}
 						full := pointerstructure.Pointer{Parts: path}
-						return nil, false, fmt.Errorf("%s references a %T so %s is invalid", first.String(), val, full.String())
+						return nil, false, fmt.Errorf("%s references a %T so %s is invalid", first.String(), lv.value, full.String())
 					}
-					found = true
-					break
+					return lv.value, true, nil
 				} else {
 					// This local variable references another value, we prepend the
 					// path of the selector it replaces and continue searching
@@ -267,34 +263,32 @@ func getValue(datum interface{}, path []string, opt ...Option) (interface{}, boo
 			}
 		}
 	}
-	if !found {
-		// This is not a local variable, we use pointerstructure to look for it
-		// in the global datum
-		ptr := pointerstructure.Pointer{
-			Parts: path,
-			Config: pointerstructure.Config{
-				TagName:                 opts.withTagName,
-				ValueTransformationHook: opts.withHookFn,
-			},
-		}
-		var err error
-		val, err = ptr.Get(datum)
-		if err != nil {
-			if errors.Is(err, pointerstructure.ErrNotFound) {
-				// Prefer the withUnknown option if set, otherwise defer to NotPresent
-				// disposition
-				switch {
-				case opts.withUnknown != nil:
-					err = nil
-					val = *opts.withUnknown
-				case evaluateNotPresent(ptr, datum):
-					return nil, false, nil
-				}
-			}
 
-			if err != nil {
-				return false, false, fmt.Errorf("error finding value in datum: %w", err)
+	// This is not a local variable, we use pointerstructure to look for it
+	// in the global datum
+	ptr := pointerstructure.Pointer{
+		Parts: path,
+		Config: pointerstructure.Config{
+			TagName:                 opts.withTagName,
+			ValueTransformationHook: opts.withHookFn,
+		},
+	}
+	val, err := ptr.Get(datum)
+	if err != nil {
+		if errors.Is(err, pointerstructure.ErrNotFound) {
+			// Prefer the withUnknown option if set, otherwise defer to NotPresent
+			// disposition
+			switch {
+			case opts.withUnknown != nil:
+				err = nil
+				val = *opts.withUnknown
+			case evaluateNotPresent(ptr, datum):
+				return nil, false, nil
 			}
+		}
+
+		if err != nil {
+			return false, false, fmt.Errorf("error finding value in datum: %w", err)
 		}
 	}
 
