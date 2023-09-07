@@ -637,7 +637,7 @@ func BenchmarkEvaluate(b *testing.B) {
 						b.Skip("Skipping benchmark - rerun with -bench-full to enable")
 					}
 
-					expr, err := CreateEvaluator(expTest.expression, nil)
+					expr, err := CreateEvaluator(expTest.expression, WithHookFn(expTest.hook))
 					require.NoError(b, err)
 
 					b.ResetTimer()

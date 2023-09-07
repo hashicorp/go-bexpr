@@ -99,6 +99,6 @@ The [Makefile](Makefile) contains 3 main targets to aid with testing:
      `1s` seemed like too little to get results consistent enough for comparison between two runs.
      For the highest degree of confidence that performance has remained steady increase this value
      even further. The time it takes to run the bench testing suite grows linearly with this value.
-   * `BENCHTESTS=BenchmarkEvalute` - This is used to run a particular benchmark including all of its
+   * `BENCHTESTS=BenchmarkEvaluate` - This is used to run a particular benchmark including all of its
      sub-benchmarks. This is just an example and "BenchmarkEvaluate" can be replaced with any
      benchmark functions name.
