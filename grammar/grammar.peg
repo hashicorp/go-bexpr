@@ -25,8 +25,6 @@ OrExpression <- left:AndExpression _ "or" _ right:OrExpression {
    return expr, nil
 } / expr:CollectionExpression {
    return expr, nil
-} / expr:CollectionExpressionWithKey {
-   return expr, nil
 }
 
 AndExpression <- left:NotExpression _ "and" _ right:AndExpression {
@@ -54,37 +52,44 @@ NotExpression <- "not" _ expr:NotExpression {
    return expr, nil
 }
 
-CollectionExpression <- operator:("all"/"any") _ selector:Selector _ "as" _ ident:(Identifier / "_") _? "{" _? expr:OrExpression _? "}" {
-   return c.onCollectionExpressionWithKey1(operator, selector, ident, "", expr)
+CollectionExpression <- op:(CollectionOpAny / CollectionOpAll) selector:Selector _ "as" _ binding:CollectionIdentifiers _? "{" _? expr:OrExpression _? "}" {
+   return &CollectionExpression{
+      Op:          op.(CollectionOperator),
+      Selector:    selector.(Selector),
+      NameBinding: binding.(CollectionNameBinding),
+      Inner:       expr.(Expression),
+   }, nil
 }
 
-CollectionExpressionWithKey <- operator:("all"/"any") _ selector:Selector _ "as" _ key:(Identifier / "_") _? "," _? value:(Identifier / "_") _? "{" _? expr:OrExpression _? "}" {
-   ce := &CollectionExpression{
-      Selector: selector.(Selector),
-      Inner:    expr.(Expression),
-   }
+CollectionIdentifiers "collection-identifiers" <- id1:Identifier _? "," _? id2:Identifier {
+   return CollectionNameBinding{
+      Mode: CollectionBindIndexAndValue,
+      Index: id1.(string),
+      Value: id2.(string),
+   }, nil
+} / id1:Identifier _? "," _? "_" {
+   return CollectionNameBinding{
+      Mode: CollectionBindIndex,
+      Index: id1.(string),
+   }, nil
+} / "_" _? "," _? id2:Identifier {
+   return CollectionNameBinding{
+      Mode: CollectionBindValue,
+      Value: id2.(string),
+   }, nil
+} / id:Identifier {
+   return CollectionNameBinding{
+      Mode: CollectionBindDefault,
+      Default: id.(string),
+   }, nil
+}
 
-   if string(operator.([]byte)) == "all" {
-      ce.Type = AllExpression
-   } else {
-      ce.Type = AnyExpression
-   }
+CollectionOpAny <- "any" _ {
+   return CollectionOpAny, nil
+}
 
-   switch k := key.(type) {
-   case string:
-      ce.Key = k
-   default:
-      ce.Key = "_"
-   }
-
-   switch v := value.(type) {
-   case string:
-      ce.Value = v
-   default:
-      ce.Value = "_"
-   }
-
-   return ce, nil
+CollectionOpAll <- "all" _ {
+   return CollectionOpAll, nil
 }
 
 ParenthesizedExpression "grouping" <- "(" _? expr:OrExpression _? ")" {

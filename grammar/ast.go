@@ -193,27 +193,54 @@ func (expr *MatchExpression) ExpressionDump(w io.Writer, indent string, level in
 	}
 }
 
-type CollectionExpressionType string
+type CollectionBindMode string
 
 const (
-	AllExpression CollectionExpressionType = "all"
-	AnyExpression CollectionExpressionType = "any"
+	CollectionBindDefault       CollectionBindMode = "Default"
+	CollectionBindIndex         CollectionBindMode = "Index"
+	CollectionBindValue         CollectionBindMode = "Value"
+	CollectionBindIndexAndValue CollectionBindMode = "Index & Value"
+)
+
+type CollectionNameBinding struct {
+	Mode    CollectionBindMode
+	Default string
+	Index   string
+	Value   string
+}
+
+func (b *CollectionNameBinding) String() string {
+	switch b.Mode {
+	case CollectionBindDefault:
+		return fmt.Sprintf("%v (%s)", b.Mode, b.Default)
+	case CollectionBindIndex:
+		return fmt.Sprintf("%v (%s)", b.Mode, b.Index)
+	case CollectionBindValue:
+		return fmt.Sprintf("%v (%s)", b.Mode, b.Value)
+	case CollectionBindIndexAndValue:
+		return fmt.Sprintf("%v (%s, %s)", b.Mode, b.Index, b.Value)
+	default:
+		return fmt.Sprintf("UNKNOWN (%s, %s, %s)", b.Default, b.Index, b.Value)
+	}
+}
+
+type CollectionOperator string
+
+const (
+	CollectionOpAll CollectionOperator = "ALL"
+	CollectionOpAny CollectionOperator = "ANY"
 )
 
 type CollectionExpression struct {
-	Type       CollectionExpressionType
-	Selector   Selector
-	Inner      Expression
-	Key, Value string
+	Op          CollectionOperator
+	Selector    Selector
+	Inner       Expression
+	NameBinding CollectionNameBinding
 }
 
 func (expr *CollectionExpression) ExpressionDump(w io.Writer, indent string, level int) {
 	localIndent := strings.Repeat(indent, level)
-	if expr.Value == "" {
-		fmt.Fprintf(w, "%s%s %s on %v {\n", localIndent, strings.ToUpper(string(expr.Type)), expr.Key, expr.Selector)
-	} else {
-		fmt.Fprintf(w, "%s%s (%s, %s) on %v {\n", localIndent, strings.ToUpper(string(expr.Type)), expr.Key, expr.Value, expr.Selector)
-	}
+	fmt.Fprintf(w, "%s%s %s on %v {\n", localIndent, expr.Op, expr.NameBinding.String(), expr.Selector)
 	expr.Inner.ExpressionDump(w, indent, level+1)
 	fmt.Fprintf(w, "%s}\n", localIndent)
 }

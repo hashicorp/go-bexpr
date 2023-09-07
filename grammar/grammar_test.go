@@ -377,9 +377,11 @@ func TestExpressionParsing(t *testing.T) {
 		"all": {
 			input: `all group.tasks as t { t.name == "hello" }`,
 			expected: &CollectionExpression{
-				Key:   "t",
-				Value: "",
-				Type:  AllExpression,
+				NameBinding: CollectionNameBinding{
+					Mode:    CollectionBindDefault,
+					Default: "t",
+				},
+				Op: CollectionOpAll,
 				Selector: Selector{
 					Type: SelectorTypeBexpr,
 					Path: []string{"group", "tasks"},
@@ -419,17 +421,21 @@ func TestExpressionParsing(t *testing.T) {
 		"nested all": {
 			input: `all group.tasks as t { all t.test as i { i == "test" }}`,
 			expected: &CollectionExpression{
-				Key:   "t",
-				Value: "",
-				Type:  AllExpression,
+				NameBinding: CollectionNameBinding{
+					Mode:    CollectionBindDefault,
+					Default: "t",
+				},
+				Op: CollectionOpAll,
 				Selector: Selector{
 					Type: SelectorTypeBexpr,
 					Path: []string{"group", "tasks"},
 				},
 				Inner: &CollectionExpression{
-					Key:   "i",
-					Value: "",
-					Type:  AllExpression,
+					NameBinding: CollectionNameBinding{
+						Mode:    CollectionBindDefault,
+						Default: "i",
+					},
+					Op: CollectionOpAll,
 					Selector: Selector{
 						Type: SelectorTypeBexpr,
 						Path: []string{"t", "test"},
@@ -450,9 +456,12 @@ func TestExpressionParsing(t *testing.T) {
 		"all with key value": {
 			input: `all group.tasks as k, v { k == v }`,
 			expected: &CollectionExpression{
-				Type:  AllExpression,
-				Key:   "k",
-				Value: "v",
+				Op: CollectionOpAll,
+				NameBinding: CollectionNameBinding{
+					Mode:  CollectionBindIndexAndValue,
+					Index: "k",
+					Value: "v",
+				},
 				Selector: Selector{
 					Type: SelectorTypeBexpr,
 					Path: []string{"group", "tasks"},
@@ -473,9 +482,11 @@ func TestExpressionParsing(t *testing.T) {
 		"any": {
 			input: `any group.tasks as t { t.name == "vmware" }`,
 			expected: &CollectionExpression{
-				Key:   "t",
-				Value: "",
-				Type:  AnyExpression,
+				NameBinding: CollectionNameBinding{
+					Mode:    CollectionBindDefault,
+					Default: "t",
+				},
+				Op: CollectionOpAny,
 				Selector: Selector{
 					Type: SelectorTypeBexpr,
 					Path: []string{"group", "tasks"},
@@ -495,17 +506,21 @@ func TestExpressionParsing(t *testing.T) {
 		"nested any": {
 			input: `any group.tasks as t { any t.test as t { t == "test" }}`,
 			expected: &CollectionExpression{
-				Key:   "t",
-				Value: "",
-				Type:  AnyExpression,
+				NameBinding: CollectionNameBinding{
+					Mode:    CollectionBindDefault,
+					Default: "t",
+				},
+				Op: CollectionOpAny,
 				Selector: Selector{
 					Type: SelectorTypeBexpr,
 					Path: []string{"group", "tasks"},
 				},
 				Inner: &CollectionExpression{
-					Key:   "t",
-					Value: "",
-					Type:  AnyExpression,
+					NameBinding: CollectionNameBinding{
+						Mode:    CollectionBindDefault,
+						Default: "t",
+					},
+					Op: CollectionOpAny,
 					Selector: Selector{
 						Type: SelectorTypeBexpr,
 						Path: []string{"t", "test"},

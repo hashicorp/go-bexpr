@@ -80,9 +80,11 @@ func TestAST_Dump(t *testing.T) {
 		},
 		"All single variation": {
 			expr: &CollectionExpression{
-				Key:   "k",
-				Value: "",
-				Type:  AllExpression,
+				NameBinding: CollectionNameBinding{
+					Mode:    CollectionBindDefault,
+					Default: "k",
+				},
+				Op: CollectionOpAll,
 				Selector: Selector{
 					Type: SelectorTypeBexpr,
 					Path: []string{"obj"},
@@ -98,13 +100,16 @@ func TestAST_Dump(t *testing.T) {
 					},
 				},
 			},
-			expected: "ALL k on obj {\n   Equal {\n      Selector: v\n      Value: \"hello\"\n   }\n}\n",
+			expected: "ALL Default (k) on obj {\n   Equal {\n      Selector: v\n      Value: \"hello\"\n   }\n}\n",
 		},
 		"All": {
 			expr: &CollectionExpression{
-				Key:   "k",
-				Value: "v",
-				Type:  AllExpression,
+				NameBinding: CollectionNameBinding{
+					Mode:  CollectionBindIndexAndValue,
+					Index: "k",
+					Value: "v",
+				},
+				Op: CollectionOpAll,
 				Selector: Selector{
 					Type: SelectorTypeBexpr,
 					Path: []string{"obj"},
@@ -120,13 +125,15 @@ func TestAST_Dump(t *testing.T) {
 					},
 				},
 			},
-			expected: "ALL (k, v) on obj {\n   Equal {\n      Selector: v\n      Value: \"hello\"\n   }\n}\n",
+			expected: "ALL Index & Value (k, v) on obj {\n   Equal {\n      Selector: v\n      Value: \"hello\"\n   }\n}\n",
 		},
 		"Any": {
 			expr: &CollectionExpression{
-				Key:   "k",
-				Value: "_",
-				Type:  AnyExpression,
+				NameBinding: CollectionNameBinding{
+					Mode:  CollectionBindIndex,
+					Index: "k",
+				},
+				Op: CollectionOpAny,
 				Selector: Selector{
 					Type: SelectorTypeBexpr,
 					Path: []string{"obj"},
@@ -142,7 +149,7 @@ func TestAST_Dump(t *testing.T) {
 					},
 				},
 			},
-			expected: "ANY (k, _) on obj {\n   Equal {\n      Selector: v\n      Value: \"hello\"\n   }\n}\n",
+			expected: "ANY Index (k) on obj {\n   Equal {\n      Selector: v\n      Value: \"hello\"\n   }\n}\n",
 		},
 	}
 

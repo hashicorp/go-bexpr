@@ -373,7 +373,7 @@ func evaluateCollectionExpression(expression *grammar.CollectionExpression, datu
 		return false, err
 	}
 	if !present {
-		return expression.Type == grammar.AllExpression, nil
+		return expression.Op == grammar.CollectionOpAll, nil
 	}
 
 	v := reflect.ValueOf(val)
@@ -381,7 +381,7 @@ func evaluateCollectionExpression(expression *grammar.CollectionExpression, datu
 	var keys []reflect.Value
 	if v.Kind() == reflect.Map {
 		if v.Type().Key() != reflect.TypeOf("") {
-			return false, fmt.Errorf("%s can only iterate over maps indexed with strings", expression.Type)
+			return false, fmt.Errorf("%s can only iterate over maps indexed with strings", expression.Op)
 		}
 		keys = v.MapKeys()
 	}
@@ -391,37 +391,37 @@ func evaluateCollectionExpression(expression *grammar.CollectionExpression, datu
 		for i := 0; i < v.Len(); i++ {
 			innerOpt := append([]Option(nil), opt...)
 
+			if expression.NameBinding.Mode == grammar.CollectionBindIndexAndValue &&
+				expression.NameBinding.Index == expression.NameBinding.Value {
+				return false, fmt.Errorf("%q cannot be used as a placeholder for both the index and the value", expression.NameBinding.Index)
+			}
+
 			if v.Kind() == reflect.Map {
 				key := keys[i]
-				if expression.Key != "_" {
-					innerOpt = append(innerOpt, WithLocalVariable(expression.Key, nil, key.Interface()))
+				if expression.NameBinding.Default != "" {
+					innerOpt = append(innerOpt, WithLocalVariable(expression.NameBinding.Default, nil, key.Interface()))
 				}
-				if expression.Value != "" && expression.Value != "_" {
+				if expression.NameBinding.Index != "" {
+					innerOpt = append(innerOpt, WithLocalVariable(expression.NameBinding.Index, nil, key.Interface()))
+				}
+				if expression.NameBinding.Value != "" {
 					path := append([]string(nil), expression.Selector.Path...)
 					path = append(path, key.Interface().(string))
-					innerOpt = append(innerOpt, WithLocalVariable(expression.Value, path, nil))
+					innerOpt = append(innerOpt, WithLocalVariable(expression.NameBinding.Value, path, nil))
 				}
 			} else {
-				if expression.Value == "" {
-					// This means we are using the version with one placeholder
-					// like "all things as t { ... }". For lists t will iterate
-					// over the elements, not the indexes to match the behavior
-					// of the Sentinel for loop (or the "for t in things" in
-					// Python). This should match what users expect.
-					if expression.Key != "_" {
-						path := append([]string(nil), expression.Selector.Path...)
-						path = append(path, strconv.Itoa(i))
-						innerOpt = append(innerOpt, WithLocalVariable(expression.Key, path, nil))
-					}
-				} else {
-					if expression.Key != "_" {
-						innerOpt = append(innerOpt, WithLocalVariable(expression.Key, nil, i))
-					}
-					if expression.Value != "_" {
-						path := append([]string(nil), expression.Selector.Path...)
-						path = append(path, strconv.Itoa(i))
-						innerOpt = append(innerOpt, WithLocalVariable(expression.Value, path, nil))
-					}
+				if expression.NameBinding.Default != "" {
+					path := append([]string(nil), expression.Selector.Path...)
+					path = append(path, fmt.Sprintf("%d", i))
+					innerOpt = append(innerOpt, WithLocalVariable(expression.NameBinding.Default, path, nil))
+				}
+				if expression.NameBinding.Index != "" {
+					innerOpt = append(innerOpt, WithLocalVariable(expression.NameBinding.Index, nil, i))
+				}
+				if expression.NameBinding.Value != "" {
+					path := append([]string(nil), expression.Selector.Path...)
+					path = append(path, fmt.Sprintf("%d", i))
+					innerOpt = append(innerOpt, WithLocalVariable(expression.NameBinding.Value, path, nil))
 				}
 			}
 
@@ -429,12 +429,12 @@ func evaluateCollectionExpression(expression *grammar.CollectionExpression, datu
 			if err != nil {
 				return false, err
 			}
-			if (result && expression.Type == grammar.AnyExpression) || (!result && expression.Type == grammar.AllExpression) {
+			if (result && expression.Op == grammar.CollectionOpAny) || (!result && expression.Op == grammar.CollectionOpAll) {
 				return result, nil
 			}
 		}
 
-		return expression.Type == grammar.AllExpression, nil
+		return expression.Op == grammar.CollectionOpAll, nil
 
 	default:
 		return false, fmt.Errorf(`%s is not a list or a map`, expression.Selector.String())

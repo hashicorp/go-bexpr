@@ -312,12 +312,11 @@ var evaluateTests map[string]expressionTest = map[string]expressionTest{
 			{expression: `"true" in "/Nested/SliceOfInfs"`, result: true},
 			{expression: `"/Nested/Map/email" matches "(foz|foo)@example.com"`, result: true},
 			// all
-			{expression: `all Nested.SliceOfInts as _ { TopInt == 5 }`, result: true},
 			{expression: `all Nested.SliceOfInts as i { i != 42 }`, result: true},
 			{expression: `all Nested.SliceOfInts as i { i == 1 }`, result: false},
 			{expression: `all Nested.Map as v { v == "bar" }`, result: false},
 			{expression: `all Nested.Map as v { v != "hello" }`, result: true},
-			{expression: `all Nested.Map as _, _ { TopInt == 5 }`, result: true},
+			{expression: `all Nested.Map as k, k { TopInt == 5 }`, err: `"k" cannot be used as a placeholder for both the index and the value`},
 			{expression: `all Nested.Map as k, _ { k != "foo" }`, result: false},
 			{expression: `all Nested.Map as k, _ { k != "hello" }`, result: true},
 			{expression: `all Nested.Map as k, v { k != "foo" or v != "baz" }`, result: true},
