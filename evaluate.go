@@ -237,7 +237,7 @@ func evaluateNotPresent(ptr pointerstructure.Pointer, datum interface{}) bool {
 	return reflect.ValueOf(val).Kind() == reflect.Map
 }
 
-// getValues resolves path to the value it references by first looking into the
+// getValue resolves path to the value it references by first looking into the
 // the local variables, then into the global datum state if it does not.
 //
 // When the path points to a local variable we have multiple cases we have to
