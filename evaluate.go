@@ -237,9 +237,26 @@ func evaluateNotPresent(ptr pointerstructure.Pointer, datum interface{}) bool {
 	return reflect.ValueOf(val).Kind() == reflect.Map
 }
 
+// getValues resolves path to the value it references by first looking into the
+// the local variables, then into the global datum state if it does not.
+//
+// When the path points to a local variable we have multiple cases we have to
+// take care of, in some constructions like
+//
+//	all Slice as item { item != "forbidden" }
+//
+// `item` is actually an alias to "/Slice/0", "/Slice/1", etc. In that case we
+// compute the full path because we tracked what each of them points to.
+//
+// In some other cases like
+//
+//	all Map as key { key != "forbidden" }
+//
+// `key` has no equivalent JSON Pointer. In that case we kept track of the the
+// concrete value instead of the path and we return it directly.
 func getValue(datum interface{}, path []string, opt ...Option) (interface{}, bool, error) {
 	opts := getOpts(opt...)
-	if len(path) != 0 {
+	if len(path) != 0 && len(opts.withLocalVariables) > 0 {
 		for i := len(opts.withLocalVariables) - 1; i >= 0; i-- {
 			name := path[0]
 			lv := opts.withLocalVariables[i]
@@ -399,23 +416,24 @@ func evaluateCollectionExpression(expression *grammar.CollectionExpression, datu
 					innerOpt = append(innerOpt, WithLocalVariable(expression.NameBinding.Index, nil, key.Interface()))
 				}
 				if expression.NameBinding.Value != "" {
-					path := append([]string(nil), expression.Selector.Path...)
+					path := make([]string, 0, len(expression.Selector.Path)+1)
+					path = append(path, expression.Selector.Path...)
 					path = append(path, key.Interface().(string))
 					innerOpt = append(innerOpt, WithLocalVariable(expression.NameBinding.Value, path, nil))
 				}
 			} else {
-				if expression.NameBinding.Default != "" {
-					path := append([]string(nil), expression.Selector.Path...)
-					path = append(path, fmt.Sprintf("%d", i))
-					innerOpt = append(innerOpt, WithLocalVariable(expression.NameBinding.Default, path, nil))
-				}
 				if expression.NameBinding.Index != "" {
 					innerOpt = append(innerOpt, WithLocalVariable(expression.NameBinding.Index, nil, i))
 				}
+
+				pathValue := make([]string, 0, len(expression.Selector.Path)+1)
+				pathValue = append(pathValue, expression.Selector.Path...)
+				pathValue = append(pathValue, fmt.Sprintf("%d", i))
+				if expression.NameBinding.Default != "" {
+					innerOpt = append(innerOpt, WithLocalVariable(expression.NameBinding.Default, pathValue, nil))
+				}
 				if expression.NameBinding.Value != "" {
-					path := append([]string(nil), expression.Selector.Path...)
-					path = append(path, fmt.Sprintf("%d", i))
-					innerOpt = append(innerOpt, WithLocalVariable(expression.NameBinding.Value, path, nil))
+					innerOpt = append(innerOpt, WithLocalVariable(expression.NameBinding.Value, pathValue, nil))
 				}
 			}
 
