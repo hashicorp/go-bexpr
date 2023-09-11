@@ -14,6 +14,14 @@ func getOpts(opt ...Option) options {
 	return opts
 }
 
+// a localVariable can either point to a known value or replace another JSON
+// Pointer path
+type localVariable struct {
+	name  string
+	path  []string
+	value any
+}
+
 // Option - how Options are passed as arguments
 type Option func(*options)
 
@@ -23,6 +31,7 @@ type options struct {
 	withTagName        string
 	withHookFn         ValueTransformationHookFn
 	withUnknown        *interface{}
+	withLocalVariables []localVariable
 }
 
 func WithMaxExpressions(maxExprCnt uint64) Option {
@@ -55,6 +64,19 @@ func WithHookFn(fn ValueTransformationHookFn) Option {
 func WithUnknownValue(val interface{}) Option {
 	return func(o *options) {
 		o.withUnknown = &val
+	}
+}
+
+// WithLocalVariable add a local variable that can either point to another path
+// that will be resolved when the local variable is referenced or to a known
+// value that will be used directly.
+func WithLocalVariable(name string, path []string, value any) Option {
+	return func(o *options) {
+		o.withLocalVariables = append(o.withLocalVariables, localVariable{
+			name:  name,
+			path:  path,
+			value: value,
+		})
 	}
 }
 

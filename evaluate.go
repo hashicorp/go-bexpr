@@ -223,7 +223,7 @@ func getMatchExprValue(expression *grammar.MatchExpression, rvalue reflect.Kind)
 // be handled by the MatchOperator's NotPresentDisposition method.
 //
 // Returns false if the Selector Path has a length of 1, or if the parent of
-// the Selector's Path is not a map, a pointerstructure.ErrrNotFound error is
+// the Selector's Path is not a map, a pointerstructure.ErrNotFound error is
 // returned.
 func evaluateNotPresent(ptr pointerstructure.Pointer, datum interface{}) bool {
 	if len(ptr.Parts) < 2 {
@@ -237,10 +237,54 @@ func evaluateNotPresent(ptr pointerstructure.Pointer, datum interface{}) bool {
 	return reflect.ValueOf(val).Kind() == reflect.Map
 }
 
-func evaluateMatchExpression(expression *grammar.MatchExpression, datum interface{}, opt ...Option) (bool, error) {
+// getValue resolves path to the value it references by first looking into the
+// the local variables, then into the global datum state if it does not.
+//
+// When the path points to a local variable we have multiple cases we have to
+// take care of, in some constructions like
+//
+//	all Slice as item { item != "forbidden" }
+//
+// `item` is actually an alias to "/Slice/0", "/Slice/1", etc. In that case we
+// compute the full path because we tracked what each of them points to.
+//
+// In some other cases like
+//
+//	all Map as key { key != "forbidden" }
+//
+// `key` has no equivalent JSON Pointer. In that case we kept track of the the
+// concrete value instead of the path and we return it directly.
+func getValue(datum interface{}, path []string, opt ...Option) (interface{}, bool, error) {
 	opts := getOpts(opt...)
+	if len(path) != 0 && len(opts.withLocalVariables) > 0 {
+		for i := len(opts.withLocalVariables) - 1; i >= 0; i-- {
+			name := path[0]
+			lv := opts.withLocalVariables[i]
+			if name == lv.name {
+				if len(lv.path) == 0 {
+					// This local variable is a key or an index and we know its
+					// value without having to call pointerstructure, we stop
+					// here.
+					if len(path) > 1 {
+						first := pointerstructure.Pointer{Parts: []string{name}}
+						full := pointerstructure.Pointer{Parts: path}
+						return nil, false, fmt.Errorf("%s references a %T so %s is invalid", first.String(), lv.value, full.String())
+					}
+					return lv.value, true, nil
+				} else {
+					// This local variable references another value, we prepend the
+					// path of the selector it replaces and continue searching
+					prefix := append([]string(nil), lv.path...)
+					path = append(prefix, path[1:]...)
+				}
+			}
+		}
+	}
+
+	// This is not a local variable, we use pointerstructure to look for it
+	// in the global datum
 	ptr := pointerstructure.Pointer{
-		Parts: expression.Selector.Path,
+		Parts: path,
 		Config: pointerstructure.Config{
 			TagName:                 opts.withTagName,
 			ValueTransformationHook: opts.withHookFn,
@@ -256,13 +300,29 @@ func evaluateMatchExpression(expression *grammar.MatchExpression, datum interfac
 				err = nil
 				val = *opts.withUnknown
 			case evaluateNotPresent(ptr, datum):
-				return expression.Operator.NotPresentDisposition(), nil
+				return nil, false, nil
 			}
 		}
 
 		if err != nil {
-			return false, fmt.Errorf("error finding value in datum: %w", err)
+			return false, false, fmt.Errorf("error finding value in datum: %w", err)
 		}
+	}
+
+	return val, true, nil
+}
+
+func evaluateMatchExpression(expression *grammar.MatchExpression, datum interface{}, opt ...Option) (bool, error) {
+	val, present, err := getValue(
+		datum,
+		expression.Selector.Path,
+		opt...,
+	)
+	if err != nil {
+		return false, err
+	}
+	if !present {
+		return expression.Operator.NotPresentDisposition(), nil
 	}
 
 	if jn, ok := val.(json.Number); ok {
@@ -314,6 +374,85 @@ func evaluateMatchExpression(expression *grammar.MatchExpression, datum interfac
 	}
 }
 
+func evaluateCollectionExpression(expression *grammar.CollectionExpression, datum interface{}, opt ...Option) (bool, error) {
+	val, present, err := getValue(
+		datum,
+		expression.Selector.Path,
+		opt...,
+	)
+	if err != nil {
+		return false, err
+	}
+	if !present {
+		return expression.Op == grammar.CollectionOpAll, nil
+	}
+
+	v := reflect.ValueOf(val)
+
+	var keys []reflect.Value
+	if v.Kind() == reflect.Map {
+		if v.Type().Key() != reflect.TypeOf("") {
+			return false, fmt.Errorf("%s can only iterate over maps indexed with strings", expression.Op)
+		}
+		keys = v.MapKeys()
+	}
+
+	switch v.Kind() {
+	case reflect.Slice, reflect.Array, reflect.Map:
+		for i := 0; i < v.Len(); i++ {
+			innerOpt := append([]Option(nil), opt...)
+
+			if expression.NameBinding.Mode == grammar.CollectionBindIndexAndValue &&
+				expression.NameBinding.Index == expression.NameBinding.Value {
+				return false, fmt.Errorf("%q cannot be used as a placeholder for both the index and the value", expression.NameBinding.Index)
+			}
+
+			if v.Kind() == reflect.Map {
+				key := keys[i]
+				if expression.NameBinding.Default != "" {
+					innerOpt = append(innerOpt, WithLocalVariable(expression.NameBinding.Default, nil, key.Interface()))
+				}
+				if expression.NameBinding.Index != "" {
+					innerOpt = append(innerOpt, WithLocalVariable(expression.NameBinding.Index, nil, key.Interface()))
+				}
+				if expression.NameBinding.Value != "" {
+					path := make([]string, 0, len(expression.Selector.Path)+1)
+					path = append(path, expression.Selector.Path...)
+					path = append(path, key.Interface().(string))
+					innerOpt = append(innerOpt, WithLocalVariable(expression.NameBinding.Value, path, nil))
+				}
+			} else {
+				if expression.NameBinding.Index != "" {
+					innerOpt = append(innerOpt, WithLocalVariable(expression.NameBinding.Index, nil, i))
+				}
+
+				pathValue := make([]string, 0, len(expression.Selector.Path)+1)
+				pathValue = append(pathValue, expression.Selector.Path...)
+				pathValue = append(pathValue, fmt.Sprintf("%d", i))
+				if expression.NameBinding.Default != "" {
+					innerOpt = append(innerOpt, WithLocalVariable(expression.NameBinding.Default, pathValue, nil))
+				}
+				if expression.NameBinding.Value != "" {
+					innerOpt = append(innerOpt, WithLocalVariable(expression.NameBinding.Value, pathValue, nil))
+				}
+			}
+
+			result, err := evaluate(expression.Inner, datum, innerOpt...)
+			if err != nil {
+				return false, err
+			}
+			if (result && expression.Op == grammar.CollectionOpAny) || (!result && expression.Op == grammar.CollectionOpAll) {
+				return result, nil
+			}
+		}
+
+		return expression.Op == grammar.CollectionOpAll, nil
+
+	default:
+		return false, fmt.Errorf(`%s is not a list or a map`, expression.Selector.String())
+	}
+}
+
 func evaluate(ast grammar.Expression, datum interface{}, opt ...Option) (bool, error) {
 	switch node := ast.(type) {
 	case *grammar.UnaryExpression:
@@ -342,6 +481,8 @@ func evaluate(ast grammar.Expression, datum interface{}, opt ...Option) (bool, e
 		}
 	case *grammar.MatchExpression:
 		return evaluateMatchExpression(node, datum, opt...)
+	case *grammar.CollectionExpression:
+		return evaluateCollectionExpression(node, datum, opt...)
 	}
 	return false, fmt.Errorf("Invalid AST node")
 }

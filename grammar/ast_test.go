@@ -78,6 +78,79 @@ func TestAST_Dump(t *testing.T) {
 			},
 			expected: "UNKNOWN {\n   Is Empty {\n      Selector: foo.bar\n   }\n   Is Empty {\n      Selector: foo.bar\n   }\n}\n",
 		},
+		"All single variation": {
+			expr: &CollectionExpression{
+				NameBinding: CollectionNameBinding{
+					Mode:    CollectionBindDefault,
+					Default: "k",
+				},
+				Op: CollectionOpAll,
+				Selector: Selector{
+					Type: SelectorTypeBexpr,
+					Path: []string{"obj"},
+				},
+				Inner: &MatchExpression{
+					Selector: Selector{
+						Type: SelectorTypeBexpr,
+						Path: []string{"v"},
+					},
+					Operator: 0,
+					Value: &MatchValue{
+						Raw: "hello",
+					},
+				},
+			},
+			expected: "ALL Default (k) on obj {\n   Equal {\n      Selector: v\n      Value: \"hello\"\n   }\n}\n",
+		},
+		"All": {
+			expr: &CollectionExpression{
+				NameBinding: CollectionNameBinding{
+					Mode:  CollectionBindIndexAndValue,
+					Index: "k",
+					Value: "v",
+				},
+				Op: CollectionOpAll,
+				Selector: Selector{
+					Type: SelectorTypeBexpr,
+					Path: []string{"obj"},
+				},
+				Inner: &MatchExpression{
+					Selector: Selector{
+						Type: SelectorTypeBexpr,
+						Path: []string{"v"},
+					},
+					Operator: 0,
+					Value: &MatchValue{
+						Raw: "hello",
+					},
+				},
+			},
+			expected: "ALL Index & Value (k, v) on obj {\n   Equal {\n      Selector: v\n      Value: \"hello\"\n   }\n}\n",
+		},
+		"Any": {
+			expr: &CollectionExpression{
+				NameBinding: CollectionNameBinding{
+					Mode:  CollectionBindIndex,
+					Index: "k",
+				},
+				Op: CollectionOpAny,
+				Selector: Selector{
+					Type: SelectorTypeBexpr,
+					Path: []string{"obj"},
+				},
+				Inner: &MatchExpression{
+					Selector: Selector{
+						Type: SelectorTypeBexpr,
+						Path: []string{"v"},
+					},
+					Operator: 0,
+					Value: &MatchValue{
+						Raw: "hello",
+					},
+				},
+			},
+			expected: "ANY Index (k) on obj {\n   Equal {\n      Selector: v\n      Value: \"hello\"\n   }\n}\n",
+		},
 	}
 
 	for name, tcase := range tests {

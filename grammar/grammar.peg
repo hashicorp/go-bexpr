@@ -23,6 +23,8 @@ OrExpression <- left:AndExpression _ "or" _ right:OrExpression {
    }, nil
 } / expr:AndExpression {
    return expr, nil
+} / expr:CollectionExpression {
+   return expr, nil
 }
 
 AndExpression <- left:NotExpression _ "and" _ right:AndExpression {
@@ -48,6 +50,46 @@ NotExpression <- "not" _ expr:NotExpression {
    }, nil
 } / expr:ParenthesizedExpression {
    return expr, nil
+}
+
+CollectionExpression <- op:(CollectionOpAny / CollectionOpAll) selector:Selector _ "as" _ binding:CollectionIdentifiers _? "{" _? expr:OrExpression _? "}" {
+   return &CollectionExpression{
+      Op:          op.(CollectionOperator),
+      Selector:    selector.(Selector),
+      NameBinding: binding.(CollectionNameBinding),
+      Inner:       expr.(Expression),
+   }, nil
+}
+
+CollectionIdentifiers "collection-identifiers" <- id1:Identifier _? "," _? id2:Identifier {
+   return CollectionNameBinding{
+      Mode: CollectionBindIndexAndValue,
+      Index: id1.(string),
+      Value: id2.(string),
+   }, nil
+} / id1:Identifier _? "," _? "_" {
+   return CollectionNameBinding{
+      Mode: CollectionBindIndex,
+      Index: id1.(string),
+   }, nil
+} / "_" _? "," _? id2:Identifier {
+   return CollectionNameBinding{
+      Mode: CollectionBindValue,
+      Value: id2.(string),
+   }, nil
+} / id:Identifier {
+   return CollectionNameBinding{
+      Mode: CollectionBindDefault,
+      Default: id.(string),
+   }, nil
+}
+
+CollectionOpAny <- "any" _ {
+   return CollectionOpAny, nil
+}
+
+CollectionOpAll <- "all" _ {
+   return CollectionOpAll, nil
 }
 
 ParenthesizedExpression "grouping" <- "(" _? expr:OrExpression _? ")" {
