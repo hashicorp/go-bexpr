@@ -1,1 +1,3 @@
-* @hashicorp/release-engineering
+@hashicorp/consul-core-reviewers
+@hashicorp/boundary
+@hashicorp/github-nomad-core
