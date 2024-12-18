@@ -622,6 +622,47 @@ func TestCustomTag(t *testing.T) {
 	}
 }
 
+func TestInOnOperator(t *testing.T) {
+	type testStruct struct {
+		Role  any
+		Match bool
+	}
+
+	exprs := []string{
+		"Role contains admin",
+		"admin in Role",
+	}
+	cases := []testStruct{
+		{
+			Role:  []string{"admin", "foo"},
+			Match: true,
+		},
+		{
+			Role:  "admin",
+			Match: true,
+		},
+		{
+			Role:  "dbadmin",
+			Match: true, // dangerous!
+		},
+		{
+			Role:  []string{"dbadmin", "foo"},
+			Match: false,
+		},
+	}
+
+	for _, q := range exprs {
+		expr, err := CreateEvaluator(q)
+		require.NoError(t, err)
+
+		for _, tc := range cases {
+			match, err := expr.Evaluate(tc)
+			require.NoError(t, err)
+			require.Equal(t, tc.Match, match)
+		}
+	}
+}
+
 func BenchmarkEvaluate(b *testing.B) {
 	for name, tcase := range evaluateTests {
 		// capture these values in the closure
