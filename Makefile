@@ -26,9 +26,6 @@ generate:
 test:
 	@go test $(TEST_VERBOSE_ARG) $(GOTEST_PKGS)
 
-test-ci:
-	@gotestsum --junitfile $(TEST_RESULTS)/gotestsum-report.xml -- $(GOTEST_PKGS)
-
 bench:
 	@go test $(TEST_VERBOSE_ARG) -run DONTRUNTESTS -bench $(BENCHTESTS) $(BENCHFULL_ARG) -benchtime=$(BENCHTIME) $(GOTEST_PKGS)
 
