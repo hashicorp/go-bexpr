@@ -95,7 +95,7 @@ The [Makefile](Makefile) contains 3 main targets to aid with testing:
    provide to the make invocation to alter the behavior a bit
    * `BENCHFULL=1` - This will enable running all the benchmarks. Some could be fairly redundant but
      could be useful when modifying specific sections of the code.
-   * `BENCHTIME=5s` - By default the -benchtime paramater used for the `go test` invocation is `2s`.
+   * `BENCHTIME=5s` - By default the -benchtime parameter used for the `go test` invocation is `2s`.
      `1s` seemed like too little to get results consistent enough for comparison between two runs.
      For the highest degree of confidence that performance has remained steady increase this value
      even further. The time it takes to run the bench testing suite grows linearly with this value.
