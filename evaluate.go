@@ -71,7 +71,7 @@ func derefType(rtype reflect.Type) reflect.Type {
 
 func doMatchMatches(expression *grammar.MatchExpression, value reflect.Value) (bool, error) {
 	if !value.Type().ConvertibleTo(byteSliceTyp) {
-		return false, fmt.Errorf("value of type %s is not convertible to []byte", value.Type())
+		return false, fmt.Errorf("Value of type %s is not convertible to []byte", value.Type())
 	}
 
 	var re *regexp.Regexp
@@ -83,7 +83,7 @@ func doMatchMatches(expression *grammar.MatchExpression, value reflect.Value) (b
 		var err error
 		re, err = regexp.Compile(expression.Value.Raw)
 		if err != nil {
-			return false, fmt.Errorf("failed to compile regular expression %q: %v", expression.Value.Raw, err)
+			return false, fmt.Errorf("Failed to compile regular expression %q: %v", expression.Value.Raw, err)
 		}
 		expression.Value.Converted = re
 	}
@@ -181,7 +181,7 @@ func doMatchIn(expression *grammar.MatchExpression, value reflect.Value) (bool, 
 		return strings.Contains(value.String(), matchValue.(string)), nil
 
 	default:
-		return false, fmt.Errorf("cannot perform in/contains operations on type %s for selector: %q", kind, expression.Selector)
+		return false, fmt.Errorf("Cannot perform in/contains operations on type %s for selector: %q", kind, expression.Selector)
 	}
 }
 
@@ -370,7 +370,7 @@ func evaluateMatchExpression(expression *grammar.MatchExpression, datum interfac
 		}
 		return false, err
 	default:
-		return false, fmt.Errorf("invalid match operation: %d", expression.Operator)
+		return false, fmt.Errorf("Invalid match operation: %d", expression.Operator)
 	}
 }
 
@@ -484,5 +484,5 @@ func evaluate(ast grammar.Expression, datum interface{}, opt ...Option) (bool, e
 	case *grammar.CollectionExpression:
 		return evaluateCollectionExpression(node, datum, opt...)
 	}
-	return false, fmt.Errorf("invalid AST node")
+	return false, fmt.Errorf("Invalid AST node")
 }
