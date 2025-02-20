@@ -25,7 +25,7 @@ func CreateFilter(expression string) (*Filter, error) {
 	}
 	exp, err := CreateEvaluator(expression)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to create boolean expression evaluator: %v", err)
+		return nil, fmt.Errorf("failed to create boolean expression evaluator: %v", err)
 	}
 
 	return &Filter{
@@ -76,7 +76,7 @@ func (f *Filter) Execute(data interface{}) (interface{}, error) {
 			item := rvalue.MapIndex(mapKey)
 
 			if !item.CanInterface() {
-				return nil, fmt.Errorf("Map value cannot be used")
+				return nil, fmt.Errorf("map value cannot be used")
 			}
 
 			result, err := f.evaluator.Evaluate(item.Interface())
@@ -91,6 +91,6 @@ func (f *Filter) Execute(data interface{}) (interface{}, error) {
 
 		return newMap.Interface(), nil
 	default:
-		return nil, fmt.Errorf("Only slices, arrays and maps are filterable")
+		return nil, fmt.Errorf("only slices, arrays and maps are filterable")
 	}
 }

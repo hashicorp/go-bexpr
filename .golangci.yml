@@ -1,0 +1,5 @@
+linters:
+ enable:
+   - errcheck
+   - staticcheck
+output_format: colored-line-number
