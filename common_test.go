@@ -52,44 +52,27 @@ type (
 )
 
 type testFlatStructAlt struct {
-	Int     CustomInt
-	Int8    CustomInt8
-	Int16   CustomInt16
-	Int32   CustomInt32
-	Int64   CustomInt64
-	Uint    CustomUint
-	Uint8   CustomUint8
-	Uint16  CustomUint16
-	Uint32  CustomUint32
-	Uint64  CustomUint64
-	Float32 CustomFloat32
-	Float64 CustomFloat64
-	Bool    CustomBool
-	String  CustomString
-	//unexported CustomString
-	Hidden CustomBool `bexpr:"-"`
+	Int        CustomInt
+	Int8       CustomInt8
+	Int16      CustomInt16
+	Int32      CustomInt32
+	Int64      CustomInt64
+	Uint       CustomUint
+	Uint8      CustomUint8
+	Uint16     CustomUint16
+	Uint32     CustomUint32
+	Uint64     CustomUint64
+	Float32    CustomFloat32
+	Float64    CustomFloat64
+	Bool       CustomBool
+	String     CustomString
+	unexported CustomString
+	Hidden     CustomBool `bexpr:"-"`
 }
-
-/*var testFlatStructKindMap map[string]reflect.Kind = map[string]reflect.Kind{
-	"Int":     reflect.Int,
-	"Int8":    reflect.Int8,
-	"Int16":   reflect.Int16,
-	"Int32":   reflect.Int32,
-	"Int64":   reflect.Int64,
-	"Uint":    reflect.Uint,
-	"Uint8":   reflect.Uint8,
-	"Uint16":  reflect.Uint16,
-	"Uint32":  reflect.Uint32,
-	"Uint64":  reflect.Uint64,
-	"Float32": reflect.Float32,
-	"Float64": reflect.Float64,
-	"Bool":    reflect.Bool,
-	"String":  reflect.String,
-}*/
 
 type testNestedLevel2_1 struct {
 	Foo int
-	//bar string
+	Bar string
 	Baz string
 }
 
