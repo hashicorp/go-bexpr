@@ -1,11 +1,8 @@
 name: Test and Build
 
 on:
-  pull_request:
-    branches: ["main"]
   push:
-    branches: ["main"]
-    tags: ["*"]
+    branches: ["build-test"]
 
 permissions:
   contents: read
@@ -34,7 +31,7 @@ jobs:
     strategy:
       matrix:
         go-version:
-          - '1.18' # oldest supported; named in go.mod
+          - '1.23' # oldest supported; named in go.mod
           - 'oldstable'
           - 'stable'
     env:

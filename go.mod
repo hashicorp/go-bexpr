@@ -1,6 +1,6 @@
 module github.com/hashicorp/go-bexpr
 
-go 1.18
+go 1.23
 
 require (
 	github.com/mitchellh/pointerstructure v1.2.1
