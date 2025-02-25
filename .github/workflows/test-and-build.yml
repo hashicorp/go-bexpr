@@ -48,7 +48,7 @@ jobs:
           go-version: ${{ matrix.go-version }}
           cache: true
       - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@08e2f20817b15149a52b5b3ebe7de50aff2ba8c5
+        uses: golangci/golangci-lint-action@2226d7cb06a077cd73e56eedd38eecad18e5d837
       - uses: autero1/action-gotestsum@7263b9d73912eec65f46337689e59fac865c425f # v2.0.0
         with:
           gotestsum_version: 1.9.0
