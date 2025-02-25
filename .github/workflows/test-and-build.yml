@@ -34,19 +34,32 @@ jobs:
     strategy:
       matrix:
         go-version:
-          - '1.18' # oldest supported; named in go.mod
+          - '1.23' # named in go.mod
           - 'oldstable'
           - 'stable'
     env:
       TEST_RESULTS: "/tmp/test-results"
     steps:
-      - uses: actions/checkout@44c2b7a8a4ea60a981eaca3cf939b5f4305c123b # v4.1.5
-      - uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5.3.0
+      - name: Checkout Code
+        uses: actions/checkout@44c2b7a8a4ea60a981eaca3cf939b5f4305c123b # v4.1.5
+      - name: Setup go
+        uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5.3.0
         with:
           go-version: ${{ matrix.go-version }}
           cache: true
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@08e2f20817b15149a52b5b3ebe7de50aff2ba8c5
       - uses: autero1/action-gotestsum@7263b9d73912eec65f46337689e59fac865c425f # v2.0.0
         with:
           gotestsum_version: 1.9.0
-
-      - run: make test
+      - name: Run test
+        run: make test
+      - name: Unit test coverage
+        run: make coverage
+      - name: Upload coverage report
+        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
+        with:
+          path: /tmp/coverage.out
+          name: Coverage-report-${{ matrix.go-version }}
+      - name: Display coverage report
+        run: go tool cover -func=/tmp/coverage.out

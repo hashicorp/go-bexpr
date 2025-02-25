@@ -5,7 +5,6 @@ package bexpr
 
 import (
 	"flag"
-	"reflect"
 )
 
 var benchFull *bool = flag.Bool("bench-full", false, "Run all benchmarks rather than a subset")
@@ -69,23 +68,6 @@ type testFlatStructAlt struct {
 	String     CustomString
 	unexported CustomString
 	Hidden     CustomBool `bexpr:"-"`
-}
-
-var testFlatStructKindMap map[string]reflect.Kind = map[string]reflect.Kind{
-	"Int":     reflect.Int,
-	"Int8":    reflect.Int8,
-	"Int16":   reflect.Int16,
-	"Int32":   reflect.Int32,
-	"Int64":   reflect.Int64,
-	"Uint":    reflect.Uint,
-	"Uint8":   reflect.Uint8,
-	"Uint16":  reflect.Uint16,
-	"Uint32":  reflect.Uint32,
-	"Uint64":  reflect.Uint64,
-	"Float32": reflect.Float32,
-	"Float64": reflect.Float64,
-	"Bool":    reflect.Bool,
-	"String":  reflect.String,
 }
 
 type testNestedLevel2_1 struct {
