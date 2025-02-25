@@ -256,12 +256,12 @@ var evaluateTests map[string]expressionTest = map[string]expressionTest{
 				MapOfStructs: map[string]testNestedLevel2_1{
 					"one": {
 						Foo: 42,
-						Bar: "hidden",
+						bar: "unexported",
 						Baz: "exported",
 					},
 					"two": {
 						Foo: 77,
-						Bar: "visible",
+						bar: "unexported",
 						Baz: "consul",
 					},
 				},
@@ -303,6 +303,11 @@ var evaluateTests map[string]expressionTest = map[string]expressionTest{
 			{expression: "TopInt != 0", result: true},
 			{expression: "Nested.Map contains nope or (Nested.Map contains bar and Nested.Map.bar == `bazel`) or TopInt != 0", result: true, benchQuick: true},
 			{expression: "Nested.MapOfStructs.one.Foo == 42", result: true},
+			{expression: "Nested.MapOfStructs.one.bar == `unexported`", result: false, err: `error finding value in datum: /Nested/MapOfStructs/one/bar at part 3: couldn't find key: struct field with name "bar"`},
+			{expression: "Nested.MapOfStructs.one.Baz == `exported`", result: true},
+			{expression: "Nested.MapOfStructs.two.Foo == 77", result: true},
+			{expression: "Nested.MapOfStructs.two.bar == `unexported`", result: false, err: `error finding value in datum: /Nested/MapOfStructs/two/bar at part 3: couldn't find key: struct field with name "bar"`},
+			{expression: "Nested.MapOfStructs.two.Baz == `consul`", result: true},
 			{expression: "7 in Nested.SliceOfInts", result: true},
 			{expression: `"/Nested/SliceOfInts" == "7"`, result: false, err: `unable to find suitable primitive comparison function for matching`},
 			{expression: "Nested.MapOfStructs is empty or (Nested.SliceOfInts contains 7 and 9 in Nested.SliceOfInts)", result: true, benchQuick: true},

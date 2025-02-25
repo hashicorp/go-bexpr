@@ -72,7 +72,7 @@ type testFlatStructAlt struct {
 
 type testNestedLevel2_1 struct {
 	Foo int
-	Bar string
+	bar string
 	Baz string
 }
 
