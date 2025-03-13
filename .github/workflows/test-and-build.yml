@@ -63,3 +63,6 @@ jobs:
           name: Coverage-report-${{ matrix.go-version }}
       - name: Display coverage report
         run: go tool cover -func=/tmp/coverage.out
+      - name: Build go
+        run: go build ./...
+        
