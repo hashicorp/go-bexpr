@@ -4,15 +4,7 @@
 
 ## Related Issue
 
-<!-- If this PR is linked to any issue, provide the issue number or description here. -->
-
-## Type of Change
-
-- [ ] Bug fix
-- [ ] New feature
-- [ ] Breaking change
-- [ ] Documentation update
-- [ ] Other (Please specify):
+<!-- If this PR is linked to any issue, provide the issue number or description here. Any related JIRA tickets can also be added here. -->
 
 ## How Has This Been Tested?
 
