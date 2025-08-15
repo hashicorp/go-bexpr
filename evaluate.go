@@ -437,7 +437,7 @@ func evaluateCollectionExpression(expression *grammar.CollectionExpression, datu
 				}
 			}
 
-			result, err := evaluate(expression.Inner, datum, innerOpt...)
+			result, err := Evaluate(expression.Inner, datum, innerOpt...)
 			if err != nil {
 				return false, err
 			}
@@ -453,31 +453,31 @@ func evaluateCollectionExpression(expression *grammar.CollectionExpression, datu
 	}
 }
 
-func evaluate(ast grammar.Expression, datum interface{}, opt ...Option) (bool, error) {
+func Evaluate(ast grammar.Expression, datum interface{}, opt ...Option) (bool, error) {
 	switch node := ast.(type) {
 	case *grammar.UnaryExpression:
 		switch node.Operator {
 		case grammar.UnaryOpNot:
-			result, err := evaluate(node.Operand, datum, opt...)
+			result, err := Evaluate(node.Operand, datum, opt...)
 			return !result, err
 		}
 	case *grammar.BinaryExpression:
 		switch node.Operator {
 		case grammar.BinaryOpAnd:
-			result, err := evaluate(node.Left, datum, opt...)
+			result, err := Evaluate(node.Left, datum, opt...)
 			if err != nil || !result {
 				return result, err
 			}
 
-			return evaluate(node.Right, datum, opt...)
+			return Evaluate(node.Right, datum, opt...)
 
 		case grammar.BinaryOpOr:
-			result, err := evaluate(node.Left, datum, opt...)
+			result, err := Evaluate(node.Left, datum, opt...)
 			if err != nil || result {
 				return result, err
 			}
 
-			return evaluate(node.Right, datum, opt...)
+			return Evaluate(node.Right, datum, opt...)
 		}
 	case *grammar.MatchExpression:
 		return evaluateMatchExpression(node, datum, opt...)
