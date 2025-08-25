@@ -4,7 +4,7 @@ go 1.23
 
 require (
 	github.com/mitchellh/pointerstructure v1.2.1
-	github.com/stretchr/testify v1.8.2
+	github.com/stretchr/testify v1.11.0
 )
 
 require (
