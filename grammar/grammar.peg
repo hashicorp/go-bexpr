@@ -119,6 +119,11 @@ MatchValueOpSelector "match" <- value:Value operator:(MatchIn / MatchNotIn) sele
 MatchEqual <- _? "==" _? {
    return MatchEqual, nil
 }
+
+MatchEqual <- _? "=" _? {
+   return MatchEqual, nil
+}
+
 MatchNotEqual <- _? "!=" _? {
    return MatchNotEqual, nil
 }
