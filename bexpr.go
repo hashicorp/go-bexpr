@@ -39,6 +39,9 @@ func CreateEvaluator(expression string, opts ...Option) (*Evaluator, error) {
 	var parserOpts []grammar.Option
 	if parsedOpts.withMaxExpressions != 0 {
 		parserOpts = append(parserOpts, grammar.MaxExpressions(parsedOpts.withMaxExpressions))
+	} else {
+		// Use sane default as large expressions consume significant memory
+		parserOpts = append(parserOpts, grammar.MaxExpressions(2000000))
 	}
 
 	ast, err := grammar.Parse("", []byte(expression), parserOpts...)
