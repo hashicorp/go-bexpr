@@ -32,6 +32,7 @@ type Evaluator struct {
 
 // CreateEvaluator is used to create and configure a new Evaluator, the expression
 // will be used by the evaluator when evaluating against any supplied datum.
+// By default the evaluator will error after 2 million expressions.
 // The following Option types are supported:
 // WithHookFn, WithMaxExpressions, WithTagName, WithUnknownValue.
 func CreateEvaluator(expression string, opts ...Option) (*Evaluator, error) {

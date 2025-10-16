@@ -3,7 +3,7 @@
 ### Improvements
 
 ### Changes
-- Adds a default for max expressions to be evaluated.
+- Adds a default of 2 million for max evaluated expressions.
 
 ### Fixed
 
