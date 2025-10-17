@@ -21,18 +21,23 @@ func TestCreateEvaluator(t *testing.T) {
 		"basic": {
 			expression: "foo == 3",
 		},
+		"default max expressions": {
+			expression: "((((((((foo == 1))))))))",
+			// typo in pigeon code-gen
+			err: "max number of expresssions parsed",
+		},
 	}
 
 	for name, tcase := range tests {
-		name := name
-		tcase := tcase
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-
 			expr, err := CreateEvaluator(tcase.expression)
 			if tcase.err == "" {
 				require.NoError(t, err)
 				require.NotNil(t, expr)
+			} else {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), tcase.err)
 			}
 		})
 	}
