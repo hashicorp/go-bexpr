@@ -28,7 +28,7 @@ type Example struct {
 
    // Can rename a field with the struct tag
    Y string `bexpr:"y"`
-   Z bool `bexpr:"foo"`
+   Z bool `bexpr:"baz"`
 
    // Tag with "-" to prevent allowing this field from being used
    Hidden string `bexpr:"-"`
