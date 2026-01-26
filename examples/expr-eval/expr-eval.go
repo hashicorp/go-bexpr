@@ -19,7 +19,7 @@ type Internal struct {
 	Hidden int `bexpr:"-"`
 
 	// Unexported fields are not available for use by the evaluator
-	unexported int
+	unexported int //nolint:unused
 }
 
 type Matchable struct {
