@@ -313,7 +313,7 @@ var evaluateTests map[string]expressionTest = map[string]expressionTest{
 			{expression: "Nested.MapOfStructs is empty or (Nested.SliceOfInts contains 7 and 9 in Nested.SliceOfInts)", result: true, benchQuick: true},
 			{expression: "Nested.SliceOfStructs.0.X == 1", result: true},
 			{expression: "Nested.SliceOfStructs.0.Y == 4", result: false},
-			{expression: "Map in Nested", result: false, err: "Cannot perform in/contains operations on type struct for selector: \"Nested\""},
+			{expression: "Map in Nested", result: false, err: "cannot perform in/contains operations on type struct for selector: \"Nested\""},
 			{expression: `"foobar" in "/Nested/SliceOfInfs"`, result: true},
 			{expression: `"1" in "/Nested/SliceOfInfs"`, result: true},
 			{expression: `"2" in "/Nested/SliceOfInfs"`, result: false},
@@ -365,14 +365,12 @@ func TestEvaluate(t *testing.T) {
 	t.Parallel()
 	for name, tcase := range evaluateTests {
 		// capture these values in the closure
-		name := name
 		tcase := tcase
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
 			for i, expTest := range tcase.expressions {
 				// capture these values in the closure
-				expTest := expTest
 				t.Run(fmt.Sprintf("#%d - %s", i, expTest.expression), func(t *testing.T) {
 					t.Parallel()
 

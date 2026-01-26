@@ -1,7 +1,23 @@
 # Copyright IBM Corp. 2019, 2025
 # SPDX-License-Identifier: MPL-2.0
 
+version: "2"
 linters:
- enable:
-   - errcheck
-output_format: colored-line-number
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
