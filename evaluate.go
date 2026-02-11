@@ -178,11 +178,24 @@ func doMatchIn(expression *grammar.MatchExpression, value reflect.Value) (bool, 
 		}
 
 	case reflect.String:
-		return strings.Contains(value.String(), matchValue.(string)), nil
+		return false, nil
 
 	default:
-		return false, fmt.Errorf("cannot perform in/contains operations on type %s for selector: %q", kind, expression.Selector)
+		return false, fmt.Errorf("cannot perform in operations on type %s for selector: %q", kind, expression.Selector)
 	}
+}
+
+func doMatchContains(expression *grammar.MatchExpression, value reflect.Value) (bool, error) {
+	if value.Kind() != reflect.String {
+		return false, fmt.Errorf("contains operator only works on strings, not %s for selector: %q", value.Kind(), expression.Selector)
+	}
+
+	matchValue, err := getMatchExprValue(expression, reflect.String)
+	if err != nil {
+		return false, fmt.Errorf("error getting match value in expression: %w", err)
+	}
+
+	return strings.Contains(value.String(), matchValue.(string)), nil
 }
 
 func doMatchIsEmpty(matcher *grammar.MatchExpression, value reflect.Value) (bool, error) {
@@ -365,6 +378,14 @@ func evaluateMatchExpression(expression *grammar.MatchExpression, datum interfac
 		return doMatchMatches(expression, rvalue)
 	case grammar.MatchNotMatches:
 		result, err := doMatchMatches(expression, rvalue)
+		if err == nil {
+			return !result, nil
+		}
+		return false, err
+	case grammar.MatchContains:
+		return doMatchContains(expression, rvalue)
+	case grammar.MatchNotContains:
+		result, err := doMatchContains(expression, rvalue)
 		if err == nil {
 			return !result, nil
 		}
