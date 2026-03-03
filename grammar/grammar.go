@@ -2314,7 +2314,7 @@ func (p *parser) callonMatchNotIn1() (any, error) {
 }
 
 func (c *current) onMatchContains1() (any, error) {
-	return MatchIn, nil
+	return MatchContains, nil
 }
 
 func (p *parser) callonMatchContains1() (any, error) {
@@ -2324,7 +2324,7 @@ func (p *parser) callonMatchContains1() (any, error) {
 }
 
 func (c *current) onMatchNotContains1() (any, error) {
-	return MatchNotIn, nil
+	return MatchNotContains, nil
 }
 
 func (p *parser) callonMatchNotContains1() (any, error) {

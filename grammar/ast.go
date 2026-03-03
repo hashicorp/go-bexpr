@@ -59,6 +59,8 @@ const (
 	MatchIsNotEmpty
 	MatchMatches
 	MatchNotMatches
+	MatchContains
+	MatchNotContains
 )
 
 func (op MatchOperator) String() string {
@@ -79,6 +81,10 @@ func (op MatchOperator) String() string {
 		return "Matches"
 	case MatchNotMatches:
 		return "Not Matches"
+	case MatchContains:
+		return "Contains"
+	case MatchNotContains:
+		return "Not Contains"
 	default:
 		return "UNKNOWN"
 	}
@@ -112,6 +118,10 @@ func (op MatchOperator) NotPresentDisposition() bool {
 		return false
 	case MatchNotMatches:
 		// M["x"] not matches <anything> is true. Nothing matches a missing key
+		return true
+	case MatchContains:
+		return false
+	case MatchNotContains:
 		return true
 	default:
 		// Should never be reached as every operator should explicitly define its
