@@ -106,7 +106,7 @@ MatchSelectorOpValue "match" <- selector:Selector operator:(MatchEqual / MatchNo
    return &MatchExpression{Selector: selector.(Selector), Operator: operator.(MatchOperator), Value: value.(*MatchValue)}, nil
 }
 
-MatchSelectorOp "match" <- selector:Selector operator:(MatchIsEmpty / MatchIsNotEmpty) {
+MatchSelectorOp "match" <- selector:Selector operator:(MatchIsEmpty / MatchIsNotEmpty / MatchIsNil / MatchIsNotNil) {
    return &MatchExpression{Selector: selector.(Selector), Operator: operator.(MatchOperator), Value: nil}, nil
 }
 
@@ -145,6 +145,12 @@ MatchMatches <- _ "matches" _ {
 }
 MatchNotMatches <- _ "not" _ "matches" _ {
    return MatchNotMatches, nil
+}
+MatchIsNil <- _ "is" _ "nil" {
+   return MatchIsNil, nil
+}
+MatchIsNotNil <- _ "is" _ "not" _ "nil" {
+   return MatchIsNotNil, nil
 }
 
 Selector "selector" <- first:Identifier rest:SelectorOrIndex* {

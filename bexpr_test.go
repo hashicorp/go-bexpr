@@ -23,8 +23,7 @@ func TestCreateEvaluator(t *testing.T) {
 		},
 		"default max expressions": {
 			expression: "((((((((foo == 1))))))))",
-			// typo in pigeon code-gen
-			err: "max number of expresssions parsed",
+			err:        "max number of expressions parsed",
 		},
 	}
 

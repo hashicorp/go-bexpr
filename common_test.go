@@ -83,13 +83,14 @@ type testNestedLevel2_2 struct {
 }
 
 type testNestedLevel1 struct {
-	Map              map[string]string
-	MapOfStructs     map[string]testNestedLevel2_1
-	MapInfInf        map[interface{}]interface{}
-	SliceOfInts      []int
-	SliceOfStructs   []testNestedLevel2_2
-	SliceOfMapInfInf []map[interface{}]interface{}
-	SliceOfInfs      []interface{}
+	Map                      map[string]string
+	MapOfStructs             map[string]testNestedLevel2_1
+	MapInfInf                map[interface{}]interface{}
+	SliceOfInts              []int
+	SliceOfStructs           []testNestedLevel2_2
+	SliceOfMapInfInf         []map[interface{}]interface{}
+	SliceOfInfs              []interface{}
+	SliceOfPointersToStructs []*testNestedLevel2_2
 }
 
 type testNestedTypes struct {
