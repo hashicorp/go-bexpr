@@ -279,6 +279,10 @@ var evaluateTests map[string]expressionTest = map[string]expressionTest{
 					},
 				},
 				SliceOfInfs: []interface{}{"foobar", 1, true},
+				SliceOfPointersToStructs: []*testNestedLevel2_2{
+					{X: 1, Y: 2, z: 10},
+					nil,
+				},
 			},
 			TopInt: 5,
 		},
@@ -357,6 +361,12 @@ var evaluateTests map[string]expressionTest = map[string]expressionTest{
 			{expression: `any Nested.Map as k, v { k == "foo" and v == "bar" }`, result: true},
 			{expression: `any Nested.Map as k { k.Color == "red" }`, err: "/k references a string so /k/Color is invalid"},
 			{expression: `any Nested.SliceOfInts as i, _ { i.Color == "red" }`, err: "/i references a int so /i/Color is invalid"},
+			{expression: `Nested.SliceOfPointersToStructs.0 is empty`, result: false},
+			{expression: `Nested.SliceOfPointersToStructs.1 is empty`, result: true},
+			{expression: `Nested.SliceOfPointersToStructs.0 is nil`, result: false},
+			{expression: `Nested.SliceOfPointersToStructs.1 is nil`, result: true},
+			{expression: `Nested.SliceOfPointersToStructs.0 is not nil`, result: true},
+			{expression: `Nested.SliceOfPointersToStructs.1 is not nil`, result: false},
 		},
 	},
 }

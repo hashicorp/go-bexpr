@@ -46,6 +46,10 @@ func TestAST_Dump(t *testing.T) {
 			expr:     &MatchExpression{Selector: Selector{Type: SelectorTypeBexpr, Path: []string{"foo", "bar"}}, Operator: MatchOperator(42), Value: nil},
 			expected: "UNKNOWN {\n   Selector: foo.bar\n}\n",
 		},
+		"MatchIsNil": {
+			expr:     &MatchExpression{Selector: Selector{Type: SelectorTypeBexpr, Path: []string{"foo", "bar"}}, Operator: MatchIsNil, Value: nil},
+			expected: "Is Nil {\n   Selector: foo.bar\n}\n",
+		},
 		"UnaryOpNot": {
 			expr:     &UnaryExpression{Operator: UnaryOpNot, Operand: &MatchExpression{Selector: Selector{Type: SelectorTypeBexpr, Path: []string{"foo", "bar"}}, Operator: MatchIsEmpty, Value: nil}},
 			expected: "Not {\n   Is Empty {\n      Selector: foo.bar\n   }\n}\n",
