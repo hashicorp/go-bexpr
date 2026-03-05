@@ -189,18 +189,6 @@ func doMatchIsEmpty(matcher *grammar.MatchExpression, value reflect.Value) (bool
 	switch kind := value.Kind(); kind {
 	case reflect.Map, reflect.Slice, reflect.Array, reflect.Chan, reflect.String:
 		return value.Len() == 0, nil
-	case reflect.Struct:
-		// a non-nil pointer to a struct will also have this type when
-		// dereferenced by the caller
-		return false, nil
-	case reflect.Invalid:
-		// a nil pointer to a struct will have this type when dereferenced by
-		// the caller
-		return true, nil
-	case reflect.Pointer:
-		// the caller should be chasing pointers-to-pointers but handle this for
-		// robustness
-		return value.IsNil(), nil
 	default:
 		return false, fmt.Errorf(
 			"cannot perform is-empty operations on type %s for selector: %q", kind, matcher.Selector)

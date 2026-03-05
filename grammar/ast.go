@@ -123,7 +123,7 @@ func (op MatchOperator) NotPresentDisposition() bool {
 		// M["x"] is nil is true. Missing keys have no value.
 		return true
 	case MatchIsNotNil:
-		// M["x"] is nil is false. Missing keys have no value.
+		// M["x"] is not nil is false. Missing keys have no value.
 		return false
 	default:
 		// Should never be reached as every operator should explicitly define its
