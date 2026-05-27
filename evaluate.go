@@ -63,7 +63,7 @@ func doEqualString(first interface{}, second reflect.Value) bool {
 
 // Get rid of 0 to many levels of pointers to get at the real type
 func derefType(rtype reflect.Type) reflect.Type {
-	for rtype.Kind() == reflect.Ptr {
+	for rtype.Kind() == reflect.Pointer {
 		rtype = rtype.Elem()
 	}
 	return rtype
