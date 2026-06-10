@@ -51,10 +51,15 @@ filter:
 	@go build ./examples/filter
 
 deps:
+	@go install github.com/hashicorp/copywrite@b3e6599f43beff698f471c6f46888045453fa030 # v0.25.3
 	@go get github.com/mna/pigeon@master
 	@go get golang.org/x/tools/cmd/goimports
 	@go get golang.org/x/tools/cmd/cover
 	@go mod tidy
 
-.PHONY: generate test coverage fmt deps bench examples expr-parse expr-eval filter
+copywriteheaders:
+	@echo "==> Running copywrite headers plan..."
+	@copywrite headers --plan
+	@echo "==> Done"
 
+.PHONY: generate test coverage fmt deps bench examples expr-parse expr-eval filter
