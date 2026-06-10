@@ -52,6 +52,7 @@ filter:
 
 deps:
 	@go install github.com/hashicorp/copywrite@b3e6599f43beff698f471c6f46888045453fa030 # v0.25.3
+	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@c0d3ddc9cf3faa61a4e378e879ece580256d76e5 # v2.12.2
 	@go get github.com/mna/pigeon@master
 	@go get golang.org/x/tools/cmd/goimports
 	@go get golang.org/x/tools/cmd/cover
@@ -62,4 +63,10 @@ copywriteheaders:
 	@copywrite headers --plan
 	@echo "==> Done"
 
-.PHONY: generate test coverage fmt deps bench examples expr-parse expr-eval filter
+.PHONY: lint
+lint:
+	@echo "==> Running linters..."
+	@golangci-lint run
+	@echo "==> Done"
+
+.PHONY: generate test coverage fmt lint deps bench examples expr-parse expr-eval filter
