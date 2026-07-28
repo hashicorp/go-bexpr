@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/hashicorp/go-bexpr/grammar"
+	"github.com/mitchellh/mapstructure"
 	"github.com/mitchellh/pointerstructure"
 )
 
@@ -112,7 +113,14 @@ func doMatchIn(expression *grammar.MatchExpression, value reflect.Value) (bool, 
 
 	switch kind := value.Kind(); kind {
 	case reflect.Map:
-		found := value.MapIndex(reflect.ValueOf(matchValue))
+		// If the value is a map, attempt to coerce the matchValue to
+		// the correct type used for the map key.
+		coercedValue, err := coerceMapKey(reflect.ValueOf(matchValue), value.Type().Key())
+		if err != nil {
+			return false, err
+		}
+
+		found := value.MapIndex(coercedValue)
 		return found.IsValid(), nil
 
 	case reflect.Slice, reflect.Array:
@@ -520,4 +528,33 @@ func evaluate(ast grammar.Expression, datum interface{}, opt ...Option) (bool, e
 		return evaluateCollectionExpression(node, datum, opt...)
 	}
 	return false, fmt.Errorf("invalid AST node")
+}
+
+// coerceMapKey is used for coercing a value to a specific type for
+// indexing a map, if possible. This uses the same coercion logic
+// that is used within pointerstructure to ensure consistent behvaiors.
+func coerceMapKey(value reflect.Value, to reflect.Type) (reflect.Value, error) {
+	// If it's assignable, return the value.
+	if value.Type().AssignableTo(to) {
+		return value, nil
+	}
+
+	// If it's convertible, convert it.
+	if value.Type().ConvertibleTo(to) {
+		return value.Convert(to), nil
+	}
+
+	// Create a pointer to a new value.
+	result := reflect.New(to)
+
+	// Decode into the new value.
+	if err := mapstructure.WeakDecode(value.Interface(), result.Interface()); err != nil {
+		// If the value can't be decoded, return the same error that would
+		// be returned from pointerstructure.Get.
+		return result, fmt.Errorf("%w %#v to type %s", pointerstructure.ErrConvert,
+			value.Interface(), to.String())
+	}
+
+	// Return the actual value of the converted result.
+	return reflect.Indirect(result), nil
 }

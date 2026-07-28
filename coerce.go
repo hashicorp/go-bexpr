@@ -1,4 +1,4 @@
-// Copyright IBM Corp. 2019, 2025
+// Copyright IBM Corp. 2019, 2026
 // SPDX-License-Identifier: MPL-2.0
 
 package bexpr
@@ -17,7 +17,7 @@ func CoerceInt64(value string) (interface{}, error) {
 
 // CoerceUint64 conforms to the FieldValueCoercionFn signature
 // and can be used to convert the raw string value of
-// an expression into an `int64`
+// an expression into a `uint64`
 func CoerceUint64(value string) (interface{}, error) {
 	i, err := strconv.ParseUint(value, 0, 64)
 	return uint64(i), err
@@ -32,7 +32,7 @@ func CoerceBool(value string) (interface{}, error) {
 
 // CoerceFloat32 conforms to the FieldValueCoercionFn signature
 // and can be used to convert the raw string value of
-// an expression into an `float32`
+// an expression into a `float32`
 func CoerceFloat32(value string) (interface{}, error) {
 	// ParseFloat always returns a float64 but ensures
 	// it can be converted to a float32 without changing
@@ -43,7 +43,7 @@ func CoerceFloat32(value string) (interface{}, error) {
 
 // CoerceFloat64 conforms to the FieldValueCoercionFn signature
 // and can be used to convert the raw string value of
-// an expression into an `float64`
+// an expression into a `float64`
 func CoerceFloat64(value string) (interface{}, error) {
 	return strconv.ParseFloat(value, 64)
 }

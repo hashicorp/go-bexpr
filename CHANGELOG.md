@@ -1,3 +1,8 @@
+## UNRELEASED
+
+### Bug Fixes
+- Fixed a bug where accessing a map value using the wrong type would panic. [[GH-145](https://github.com/hashicorp/go-bexpr/pull/145)]
+
 ## 0.1.16 (March 5, 2026)
 
 ### Improvements

@@ -369,6 +369,141 @@ var evaluateTests map[string]expressionTest = map[string]expressionTest{
 			{expression: `Nested.SliceOfPointersToStructs.1 is not nil`, result: false},
 		},
 	},
+	// Test that maps can be properly indexed with non-string types.
+	"map[string]map[int]string": {
+		map[string]map[int]string{
+			"foo": {
+				22: "ssh",
+				80: "http",
+				53: "domain",
+			},
+			"bar": nil,
+		},
+		[]expressionCheck{
+			{expression: "foo.80 == http", result: true},
+			{expression: "bar.80 == http", result: false},
+			{expression: "foo.baz == http", result: false, err: `error finding value in datum: /foo/baz at part 1: couldn't convert value "baz" to type int`},
+			{expression: "foo.22.baz == 3", result: false, err: "error finding value in datum: /foo/22/baz: at part 2, invalid value kind: string"},
+			{expression: "53 in foo", result: true},
+			{expression: "53 not in foo", result: false},
+			{expression: "99 in foo", result: false},
+			{expression: "53 in foo.baz", result: false, err: `error finding value in datum: /foo/baz at part 1: couldn't convert value "baz" to type int`},
+			{expression: "foo is not empty", result: true},
+			{expression: "foo is empty", result: false},
+		},
+	},
+	"map[string]map[int8]string": {
+		map[string]map[int8]string{
+			"foo": {
+				22: "ssh",
+				80: "http",
+				53: "domain",
+			},
+			"bar": nil,
+		},
+		[]expressionCheck{
+			{expression: "foo.80 == http", result: true},
+			{expression: "bar.80 == http", result: false},
+			{expression: "foo.baz == http", result: false, err: `error finding value in datum: /foo/baz at part 1: couldn't convert value "baz" to type int8`},
+			{expression: "foo.22.baz == 3", result: false, err: "error finding value in datum: /foo/22/baz: at part 2, invalid value kind: string"},
+			{expression: "53 in foo", result: true},
+			{expression: "53 not in foo", result: false},
+			{expression: "99 in foo", result: false},
+			{expression: "53 in foo.baz", result: false, err: `error finding value in datum: /foo/baz at part 1: couldn't convert value "baz" to type int8`},
+			{expression: "foo is not empty", result: true},
+			{expression: "foo is empty", result: false},
+		},
+	},
+	"map[string]map[float32]string": {
+		map[string]map[float32]string{
+			"foo": {
+				22:    "ssh",
+				80:    "http",
+				53:    "domain",
+				11.11: "wow",
+			},
+			"bar": nil,
+		},
+		[]expressionCheck{
+			{expression: `"/foo/11.11" == wow`, result: true},
+			{expression: "foo.80 == http", result: true},
+			{expression: "bar.80 == http", result: false},
+			{expression: "foo.baz == http", result: false, err: `error finding value in datum: /foo/baz at part 1: couldn't convert value "baz" to type float32`},
+			{expression: "foo.22.baz == 3", result: false, err: "error finding value in datum: /foo/22/baz: at part 2, invalid value kind: string"},
+			{expression: "53 in foo", result: true},
+			{expression: "53 not in foo", result: false},
+			{expression: "99 in foo", result: false},
+			{expression: "53 in foo.baz", result: false, err: `error finding value in datum: /foo/baz at part 1: couldn't convert value "baz" to type float32`},
+			{expression: "foo is not empty", result: true},
+			{expression: "foo is empty", result: false},
+		},
+	},
+	"map[string]map[bool]string": {
+		map[string]map[bool]string{
+			"foo": {
+				true:  "yes",
+				false: "no",
+			},
+			"bar": nil,
+		},
+		[]expressionCheck{
+			{expression: "foo.true == yes", result: true},
+			{expression: "foo.false == no", result: true},
+			{expression: "bar.true == yes", result: false},
+			{expression: "foo.baz == yes", result: false, err: `error finding value in datum: /foo/baz at part 1: couldn't convert value "baz" to type bool`},
+			{expression: "foo.false.baz == 3", result: false, err: "error finding value in datum: /foo/false/baz: at part 2, invalid value kind: string"},
+			{expression: "true in foo", result: true},
+			{expression: "false not in foo", result: false},
+			{expression: "foo is not empty", result: true},
+			{expression: "foo is empty", result: false},
+		},
+	},
+	"map[string]map[[1]string]string": {
+		map[string]map[[1]string]string{
+			"foo": {
+				[1]string{"baz"}: "yes",
+			},
+			"bar": nil,
+		},
+		[]expressionCheck{
+			{expression: "foo.baz == yes", result: true},
+			{expression: "baz in foo", result: true},
+			{expression: "baz in bar", result: false},
+			{expression: "foo is not empty", result: true},
+			{expression: "bar is empty", result: true},
+			{expression: "bar.baz.foo == no", result: false, err: `error finding value in datum: /bar/baz/foo at part 1: couldn't find key [1]string{"baz"}`},
+			{expression: "foo in bar.baz", result: false},
+		},
+	},
+	"map[string]map[[2]string]string": {
+		map[string]map[[2]string]string{
+			"foo": {
+				[2]string{"bar", "baz"}: "yes",
+			},
+			"bar": nil,
+		},
+		[]expressionCheck{
+			{expression: "foo.bar.baz == yes", result: false, err: `error finding value in datum: /foo/bar/baz at part 1: couldn't find key [2]string{"bar", ""}`},
+			{expression: "bar.baz in foo", result: false},
+		},
+	},
+	// With an interface type key, only string type keys can be indexed
+	// with pointerstructure so ensure contains behaves the same.
+	"map[string]map[interface{}]bool": {
+		map[string]map[interface{}]bool{
+			"foo": {
+				"baz": true,
+				22:    true,
+			},
+			"bar": nil,
+		},
+		[]expressionCheck{
+			{expression: "foo.22 == true", result: false},
+			{expression: "22 in foo", result: false},
+			{expression: "foo.baz == true", result: true},
+			{expression: "baz in foo", result: true},
+		},
+	},
 }
 
 func TestEvaluate(t *testing.T) {
