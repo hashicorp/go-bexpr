@@ -306,6 +306,10 @@ var evaluateTests map[string]expressionTest = map[string]expressionTest{
 			{expression: "Nested.Map.bar == `bazel`", result: false, benchQuick: true},
 			{expression: "TopInt != 0", result: true},
 			{expression: "Nested.Map contains nope or (Nested.Map contains bar and Nested.Map.bar == `bazel`) or TopInt != 0", result: true, benchQuick: true},
+			{expression: "Nested.Map.foo == Nested.Map.foo", result: true},
+			{expression: "Nested.Map.foo == Nested.Map.bar", result: false},
+			{expression: "Nested.MapOfStructs.one.Foo == Nested.MapOfStructs.one.Foo", result: true},
+			{expression: "Nested.MapOfStructs.one.Foo == Nested.MapOfStructs.two.Foo", result: false},
 			{expression: "Nested.MapOfStructs.one.Foo == 42", result: true},
 			{expression: "Nested.MapOfStructs.one.bar == `unexported`", result: false, err: `error finding value in datum: /Nested/MapOfStructs/one/bar at part 3: couldn't find key: struct field with name "bar"`},
 			{expression: "Nested.MapOfStructs.one.Baz == `exported`", result: true},
@@ -502,6 +506,42 @@ var evaluateTests map[string]expressionTest = map[string]expressionTest{
 			{expression: "22 in foo", result: false},
 			{expression: "foo.baz == true", result: true},
 			{expression: "baz in foo", result: true},
+		},
+	},
+	// Selector on the RHS of a comparison should look up the referenced
+	// value instead of treating the path as a string literal.
+	"Selector Comparison": {
+		map[string]map[string]string{
+			"value": {
+				"nomad":  "prueba",
+				"consul": "prueba",
+				"other":  "nope",
+			},
+		},
+		[]expressionCheck{
+			{expression: "value.nomad == prueba and value.consul == prueba", result: true},
+			{expression: "value.nomad == value.consul", result: true},
+			{expression: "value.nomad != value.consul", result: false},
+			{expression: "value.nomad == value.other", result: false},
+			{expression: "value.nomad != value.other", result: true},
+			{expression: `value.nomad == "value.consul"`, result: false},
+			{expression: `"/value/nomad" == "/value/consul"`, result: true},
+			{expression: "value.nomad == value.missing", result: false},
+			{expression: "value.nomad != value.missing", result: true},
+		},
+	},
+	"Selector Comparison Ints": {
+		map[string]map[string]int{
+			"nums": {
+				"x": 5,
+				"y": 5,
+				"z": 9,
+			},
+		},
+		[]expressionCheck{
+			{expression: "nums.x == nums.y", result: true},
+			{expression: "nums.x == nums.z", result: false},
+			{expression: "nums.x != nums.z", result: true},
 		},
 	},
 }
