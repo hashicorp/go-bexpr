@@ -210,7 +210,12 @@ IndexExpression "index" <- "[" _? lit:StringLiteral _? "]" {
 }
 
 Value "value" <- selector:Selector {
-   return &MatchValue{Raw:selector.(Selector).String()}, nil
+   sel := selector.(Selector)
+   mv := &MatchValue{Raw: sel.String()}
+   if len(sel.Path) > 1 {
+      mv.Selector = &sel
+   }
+   return mv, nil
 } / n:NumberLiteral {
    return &MatchValue{Raw: n.(string)}, nil
 } / s:StringLiteral {

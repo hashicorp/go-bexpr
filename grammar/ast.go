@@ -135,6 +135,10 @@ func (op MatchOperator) NotPresentDisposition() bool {
 type MatchValue struct {
 	Raw       string
 	Converted interface{}
+	// Selector is set when the value was parsed as a selector with more than
+	// one path component. Evaluation looks that path up instead of using Raw
+	// as a string literal. Single-component identifiers stay literals.
+	Selector *Selector
 }
 
 type UnaryExpression struct {

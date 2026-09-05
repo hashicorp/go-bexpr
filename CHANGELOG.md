@@ -2,6 +2,7 @@
 
 ### Bug Fixes
 - Fixed a bug where accessing a map value using the wrong type would panic. [[GH-145](https://github.com/hashicorp/go-bexpr/pull/145)]
+- Fixed selector-to-selector comparisons such as `value.nomad == value.consul` treating the right-hand side as a string literal. [[GH-72](https://github.com/hashicorp/go-bexpr/issues/72)]
 
 ## 0.1.16 (March 5, 2026)
 

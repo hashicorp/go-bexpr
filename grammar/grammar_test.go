@@ -277,6 +277,30 @@ func TestExpressionParsing(t *testing.T) {
 			expected: &MatchExpression{Selector: Selector{Type: SelectorTypeBexpr, Path: []string{"foo", "bar", "meta", "tags", "ENV"}}, Operator: MatchIn, Value: &MatchValue{Raw: "environment"}},
 			err:      "",
 		},
+		"Match Equality Selector Value": {
+			input: "value.nomad == value.consul",
+			expected: &MatchExpression{
+				Selector: Selector{Type: SelectorTypeBexpr, Path: []string{"value", "nomad"}},
+				Operator: MatchEqual,
+				Value: &MatchValue{
+					Raw:      "value.consul",
+					Selector: &Selector{Type: SelectorTypeBexpr, Path: []string{"value", "consul"}},
+				},
+			},
+			err: "",
+		},
+		"Match Equality JSON Pointer Selector Value": {
+			input: `"/value/nomad" == "/value/consul"`,
+			expected: &MatchExpression{
+				Selector: Selector{Type: SelectorTypeJsonPointer, Path: []string{"value", "nomad"}},
+				Operator: MatchEqual,
+				Value: &MatchValue{
+					Raw:      "value/consul",
+					Selector: &Selector{Type: SelectorTypeJsonPointer, Path: []string{"value", "consul"}},
+				},
+			},
+			err: "",
+		},
 		// selectors can contain almost any character set when index expressions are used
 		// This includes whitespace, hyphens, unicode, etc.
 		"Selector Index Chars": {

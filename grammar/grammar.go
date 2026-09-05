@@ -2584,7 +2584,12 @@ func (p *parser) callonIndexExpression28() (bool, error) {
 }
 
 func (c *current) onValue2(selector any) (any, error) {
-	return &MatchValue{Raw: selector.(Selector).String()}, nil
+	sel := selector.(Selector)
+	mv := &MatchValue{Raw: sel.String()}
+	if len(sel.Path) > 1 {
+		mv.Selector = &sel
+	}
+	return mv, nil
 }
 
 func (p *parser) callonValue2() (any, error) {

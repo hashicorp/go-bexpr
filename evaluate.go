@@ -92,23 +92,29 @@ func doMatchMatches(expression *grammar.MatchExpression, value reflect.Value) (b
 	return re.Match(value.Convert(byteSliceTyp).Interface().([]byte)), nil
 }
 
-func doMatchEqual(expression *grammar.MatchExpression, value reflect.Value) (bool, error) {
+func doMatchEqual(expression *grammar.MatchExpression, value reflect.Value, datum interface{}, opt ...Option) (bool, error) {
 	// NOTE: see preconditions in evaluategrammar.MatchExpressionRecurse
 	eqFn := primitiveEqualityFn(value.Kind())
 	if eqFn == nil {
 		return false, errors.New("unable to find suitable primitive comparison function for matching")
 	}
-	matchValue, err := getMatchExprValue(expression, value.Kind())
+	matchValue, present, err := getMatchExprValue(expression, value.Kind(), datum, opt...)
 	if err != nil {
 		return false, fmt.Errorf("error getting match value in expression: %w", err)
+	}
+	if !present {
+		return false, nil
 	}
 	return eqFn(matchValue, value), nil
 }
 
-func doMatchIn(expression *grammar.MatchExpression, value reflect.Value) (bool, error) {
-	matchValue, err := getMatchExprValue(expression, value.Kind())
+func doMatchIn(expression *grammar.MatchExpression, value reflect.Value, datum interface{}, opt ...Option) (bool, error) {
+	matchValue, present, err := getMatchExprValue(expression, value.Kind(), datum, opt...)
 	if err != nil {
 		return false, fmt.Errorf("error getting match value in expression: %w", err)
+	}
+	if !present {
+		return false, nil
 	}
 
 	switch kind := value.Kind(); kind {
@@ -145,12 +151,15 @@ func doMatchIn(expression *grammar.MatchExpression, value reflect.Value) (bool, 
 				// syntax errors, so as a special case in this situation, don't
 				// error on a strconv.ErrSyntax, just continue on to the next
 				// element.
-				matchValue, err = getMatchExprValue(expression, kind)
+				matchValue, present, err = getMatchExprValue(expression, kind, datum, opt...)
 				if err != nil {
 					if errors.Is(err, strconv.ErrSyntax) {
 						continue
 					}
 					return false, errors.New(`error getting interface slice match value in expression`)
+				}
+				if !present {
+					return false, nil
 				}
 				eqFn := primitiveEqualityFn(kind)
 				if eqFn == nil {
@@ -167,9 +176,12 @@ func doMatchIn(expression *grammar.MatchExpression, value reflect.Value) (bool, 
 			// Otherwise it's a concrete type and we can essentially cache the
 			// answers. First we need to re-derive the match value for equality
 			// assertion.
-			matchValue, err = getMatchExprValue(expression, kind)
+			matchValue, present, err = getMatchExprValue(expression, kind, datum, opt...)
 			if err != nil {
 				return false, fmt.Errorf("error getting match value in expression: %w", err)
+			}
+			if !present {
+				return false, nil
 			}
 			eqFn := primitiveEqualityFn(kind)
 			if eqFn == nil {
@@ -225,29 +237,78 @@ func doMatchIsNil(matcher *grammar.MatchExpression, value reflect.Value) (bool, 
 	}
 }
 
-func getMatchExprValue(expression *grammar.MatchExpression, rvalue reflect.Kind) (interface{}, error) {
+func primitiveRaw(val interface{}) (string, error) {
+	rv := reflect.Indirect(reflect.ValueOf(val))
+	switch rv.Kind() {
+	case reflect.Bool:
+		return strconv.FormatBool(rv.Bool()), nil
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return strconv.FormatInt(rv.Int(), 10), nil
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return strconv.FormatUint(rv.Uint(), 10), nil
+	case reflect.Float32:
+		return strconv.FormatFloat(rv.Float(), 'g', -1, 32), nil
+	case reflect.Float64:
+		return strconv.FormatFloat(rv.Float(), 'g', -1, 64), nil
+	case reflect.String:
+		return rv.String(), nil
+	default:
+		return "", fmt.Errorf("value of type %s cannot be used as a match value", rv.Kind())
+	}
+}
+
+func getMatchExprValue(expression *grammar.MatchExpression, rvalue reflect.Kind, datum interface{}, opt ...Option) (interface{}, bool, error) {
 	if expression.Value == nil {
-		return nil, nil
+		return nil, true, nil
+	}
+
+	raw := expression.Value.Raw
+	if sel := expression.Value.Selector; sel != nil {
+		val, present, err := getValue(datum, sel.Path, opt...)
+		if err != nil {
+			return nil, false, err
+		}
+		if !present {
+			return nil, false, nil
+		}
+		if jn, ok := val.(json.Number); ok {
+			if jni, err := jn.Int64(); err == nil {
+				val = jni
+			} else if jnf, err := jn.Float64(); err == nil {
+				val = jnf
+			} else {
+				return nil, false, fmt.Errorf("unable to convert json number %s to int or float", jn)
+			}
+		}
+		raw, err = primitiveRaw(val)
+		if err != nil {
+			return nil, false, err
+		}
 	}
 
 	switch rvalue {
 	case reflect.Bool:
-		return CoerceBool(expression.Value.Raw)
+		v, err := CoerceBool(raw)
+		return v, true, err
 
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return CoerceInt64(expression.Value.Raw)
+		v, err := CoerceInt64(raw)
+		return v, true, err
 
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		return CoerceUint64(expression.Value.Raw)
+		v, err := CoerceUint64(raw)
+		return v, true, err
 
 	case reflect.Float32:
-		return CoerceFloat32(expression.Value.Raw)
+		v, err := CoerceFloat32(raw)
+		return v, true, err
 
 	case reflect.Float64:
-		return CoerceFloat64(expression.Value.Raw)
+		v, err := CoerceFloat64(raw)
+		return v, true, err
 
 	default:
-		return expression.Value.Raw, nil
+		return raw, true, nil
 	}
 }
 
@@ -373,17 +434,17 @@ func evaluateMatchExpression(expression *grammar.MatchExpression, datum interfac
 	rvalue := reflect.Indirect(reflect.ValueOf(val))
 	switch expression.Operator {
 	case grammar.MatchEqual:
-		return doMatchEqual(expression, rvalue)
+		return doMatchEqual(expression, rvalue, datum, opt...)
 	case grammar.MatchNotEqual:
-		result, err := doMatchEqual(expression, rvalue)
+		result, err := doMatchEqual(expression, rvalue, datum, opt...)
 		if err == nil {
 			return !result, nil
 		}
 		return false, err
 	case grammar.MatchIn:
-		return doMatchIn(expression, rvalue)
+		return doMatchIn(expression, rvalue, datum, opt...)
 	case grammar.MatchNotIn:
-		result, err := doMatchIn(expression, rvalue)
+		result, err := doMatchIn(expression, rvalue, datum, opt...)
 		if err == nil {
 			return !result, nil
 		}
