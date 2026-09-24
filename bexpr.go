@@ -73,7 +73,7 @@ func (eval *Evaluator) Evaluate(datum interface{}) (bool, error) {
 		opts = append(opts, WithUnknownValue(*eval.unknownVal))
 	}
 
-	return evaluate(eval.ast, datum, opts...)
+	return Evaluate(eval.ast, datum, opts...)
 }
 
 // Expression can be used to return the initial expression used to create the Evaluator.
