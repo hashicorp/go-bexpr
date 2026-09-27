@@ -278,7 +278,7 @@ var evaluateTests map[string]expressionTest = map[string]expressionTest{
 						z: 10,
 					},
 				},
-				SliceOfInfs: []interface{}{"foobar", 1, true},
+				SliceOfInfs: []interface{}{"foobar", nil, 1, true},
 				SliceOfPointersToStructs: []*testNestedLevel2_2{
 					{X: 1, Y: 2, z: 10},
 					nil,
@@ -322,6 +322,7 @@ var evaluateTests map[string]expressionTest = map[string]expressionTest{
 			{expression: `"1" in "/Nested/SliceOfInfs"`, result: true},
 			{expression: `"2" in "/Nested/SliceOfInfs"`, result: false},
 			{expression: `"true" in "/Nested/SliceOfInfs"`, result: true},
+			{expression: `"1" in Nested.SliceOfInfs`, result: true}, // nil before 1 must not panic (#151)
 			{expression: `"/Nested/Map/email" matches "(foz|foo)@example.com"`, result: true},
 			// Missing key in map tests
 			{expression: "Nested.Map.notfound == 4", result: false},
@@ -843,5 +844,19 @@ func BenchmarkEvaluate(b *testing.B) {
 				})
 			}
 		})
+	}
+}
+
+func TestMatchInNilInterfaceElement(t *testing.T) {
+	ev, err := CreateEvaluator(`1 in list`)
+	require.NoError(t, err)
+
+	for _, doc := range []map[string]interface{}{
+		{"list": []interface{}{1, nil}},
+		{"list": []interface{}{nil, 1}},
+	} {
+		got, err := ev.Evaluate(doc)
+		require.NoError(t, err)
+		require.True(t, got, "doc=%v", doc)
 	}
 }

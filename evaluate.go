@@ -133,6 +133,10 @@ func doMatchIn(expression *grammar.MatchExpression, value reflect.Value) (bool, 
 			// type/kind and rederiving the match value.
 			for i := 0; i < value.Len(); i++ {
 				item := value.Index(i).Elem()
+				// JSON null becomes a nil interface element; skip it.
+				if !item.IsValid() {
+					continue
+				}
 				itemType := derefType(item.Type())
 				kind := itemType.Kind()
 				// We need to special case errors here. The reason is that in an
