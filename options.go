@@ -1,4 +1,4 @@
-// Copyright IBM Corp. 2019, 2025
+// Copyright IBM Corp. 2019, 2026
 // SPDX-License-Identifier: MPL-2.0
 
 package bexpr
@@ -27,11 +27,12 @@ type Option func(*options)
 
 // options = how options are represented
 type options struct {
-	withMaxExpressions uint64
-	withTagName        string
-	withHookFn         ValueTransformationHookFn
-	withUnknown        *interface{}
-	withLocalVariables []localVariable
+	withMaxExpressions      uint64
+	withTagName             string
+	withHookFn              ValueTransformationHookFn
+	withUnknown             *interface{}
+	withLocalVariables      []localVariable
+	withStrictOperatorTypes bool
 }
 
 func WithMaxExpressions(maxExprCnt uint64) Option {
@@ -77,6 +78,15 @@ func WithLocalVariable(name string, path []string, value any) Option {
 			path:  path,
 			value: value,
 		})
+	}
+}
+
+// WithStrictOperatorTypes restricts "in" and "not in" to collection
+// membership, and "contains" and "not contains" to substring matching on
+// strings. It is disabled by default.
+func WithStrictOperatorTypes(enabled bool) Option {
+	return func(o *options) {
+		o.withStrictOperatorTypes = enabled
 	}
 }
 
