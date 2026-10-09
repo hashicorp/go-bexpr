@@ -61,6 +61,8 @@ const (
 	MatchNotMatches
 	MatchIsNil
 	MatchIsNotNil
+	MatchContains
+	MatchNotContains
 )
 
 func (op MatchOperator) String() string {
@@ -81,6 +83,10 @@ func (op MatchOperator) String() string {
 		return "Matches"
 	case MatchNotMatches:
 		return "Not Matches"
+	case MatchContains:
+		return "Contains"
+	case MatchNotContains:
+		return "Not Contains"
 	case MatchIsNil:
 		return "Is Nil"
 	case MatchIsNotNil:
@@ -118,6 +124,12 @@ func (op MatchOperator) NotPresentDisposition() bool {
 		return false
 	case MatchNotMatches:
 		// M["x"] not matches <anything> is true. Nothing matches a missing key
+		return true
+	case MatchContains:
+		// M["x"] contains <value> is false. Missing keys contain no values
+		return false
+	case MatchNotContains:
+		// M["x"] not contains <value> is true. Missing keys contain no values
 		return true
 	case MatchIsNil:
 		// M["x"] is nil is true. Missing keys have no value.
@@ -198,7 +210,7 @@ func (expr *BinaryExpression) ExpressionDump(w io.Writer, indent string, level i
 
 func (expr *MatchExpression) ExpressionDump(w io.Writer, indent string, level int) {
 	switch expr.Operator {
-	case MatchEqual, MatchNotEqual, MatchIn, MatchNotIn:
+	case MatchEqual, MatchNotEqual, MatchIn, MatchNotIn, MatchContains, MatchNotContains:
 		fmt.Fprintf(w, "%[1]s%[3]s {\n%[2]sSelector: %[4]v\n%[2]sValue: %[5]q\n%[1]s}\n", strings.Repeat(indent, level), strings.Repeat(indent, level+1), expr.Operator.String(), expr.Selector, expr.Value.Raw)
 	default:
 		fmt.Fprintf(w, "%[1]s%[3]s {\n%[2]sSelector: %[4]v\n%[1]s}\n", strings.Repeat(indent, level), strings.Repeat(indent, level+1), expr.Operator.String(), expr.Selector)
