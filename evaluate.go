@@ -132,7 +132,16 @@ func doMatchIn(expression *grammar.MatchExpression, value reflect.Value) (bool, 
 			// have to treat each element individually, checking each element's
 			// type/kind and rederiving the match value.
 			for i := 0; i < value.Len(); i++ {
-				item := value.Index(i).Elem()
+				item := value.Index(i)
+				// A JSON null is a nil interface. Elem() of that is the
+				// zero Value, and Type() panics. It is not a match.
+				if !item.IsValid() || (item.Kind() == reflect.Interface && item.IsNil()) {
+					continue
+				}
+				item = item.Elem()
+				if !item.IsValid() {
+					continue
+				}
 				itemType := derefType(item.Type())
 				kind := itemType.Kind()
 				// We need to special case errors here. The reason is that in an
