@@ -774,43 +774,162 @@ func TestCustomTag(t *testing.T) {
 }
 
 func TestInOnOperator(t *testing.T) {
-	type testStruct struct {
-		Role  any
-		Match bool
+	type testCase struct {
+		Name       string
+		Expression string
+		Role       any
+		Match      bool
+		StrictMode bool
+		WantErr    string
 	}
 
-	exprs := []string{
-		"Role contains admin",
-		"admin in Role",
-	}
-	cases := []testStruct{
+	cases := []testCase{
 		{
-			Role:  []string{"admin", "foo"},
-			Match: true,
+			Name:       "default in collection",
+			Expression: "admin in Role",
+			Role:       []string{"admin", "foo"},
+			Match:      true,
 		},
 		{
-			Role:  "admin",
-			Match: true,
+			Name:       "default in string",
+			Expression: "admin in Role",
+			Role:       "dbadmin", // dangerous!
+			Match:      true,
 		},
 		{
-			Role:  "dbadmin",
-			Match: true, // dangerous!
+			Name:       "default contains string",
+			Expression: "Role contains admin",
+			Role:       "dbadmin",
+			Match:      true,
 		},
 		{
-			Role:  []string{"dbadmin", "foo"},
-			Match: false,
+			Name:       "default contains collection",
+			Expression: "Role contains admin",
+			Role:       []string{"admin", "foo"},
+			Match:      true,
+		},
+		{
+			Name:       "strict in collection",
+			Expression: "admin in Role",
+			Role:       []string{"admin", "foo"},
+			Match:      true,
+			StrictMode: true,
+		},
+		{
+			Name:       "strict in string errors",
+			Expression: "admin in Role",
+			Role:       "dbadmin", // safe!
+			StrictMode: true,
+			WantErr:    `cannot perform substring match with 'in' operator in strict operator types mode for selector: "Role"`,
+		},
+		{
+			Name:       "strict contains string",
+			Expression: "Role contains admin",
+			Role:       "dbadmin",
+			Match:      true,
+			StrictMode: true,
+		},
+		{
+			Name:       "strict contains collection errors",
+			Expression: "Role contains admin",
+			Role:       []string{"admin", "foo"},
+			StrictMode: true,
+			WantErr:    `contains operator only works on strings in strict operator types mode, not slice for selector: "Role"`,
 		},
 	}
 
-	for _, q := range exprs {
-		expr, err := CreateEvaluator(q)
-		require.NoError(t, err)
+	for _, tc := range cases {
+		t.Run(tc.Name, func(t *testing.T) {
+			t.Parallel()
 
-		for _, tc := range cases {
+			expr, err := CreateEvaluator(tc.Expression, WithStrictOperatorTypes(tc.StrictMode))
+			require.NoError(t, err)
+
 			match, err := expr.Evaluate(tc)
+			if tc.WantErr != "" {
+				require.EqualError(t, err, tc.WantErr)
+				require.False(t, match)
+				return
+			}
+
 			require.NoError(t, err)
 			require.Equal(t, tc.Match, match)
-		}
+		})
+	}
+}
+
+func TestStrictOperatorTypes(t *testing.T) {
+	type testCase struct {
+		Name       string
+		Expression string
+		Role       any
+		Match      bool
+		StrictMode bool
+		WantErr    string
+	}
+
+	tests := []testCase{
+		{
+			Name:       "not in matches collection member",
+			Expression: "admin not in Role",
+			Role:       []string{"admin", "foo"},
+			StrictMode: true,
+			Match:      false,
+		},
+		{
+			Name:       "not in matches missing collection member",
+			Expression: "admin not in Role",
+			Role:       []string{"foo"},
+			StrictMode: true,
+			Match:      true,
+		},
+		{
+			Name:       "not in rejects string",
+			Expression: "admin not in Role",
+			Role:       "dbadmin",
+			StrictMode: true,
+			WantErr:    `cannot perform substring match with 'in' operator in strict operator types mode for selector: "Role"`,
+		},
+		{
+			Name:       "not contains negates substring match",
+			Expression: "Role not contains admin",
+			Role:       "dbadmin",
+			StrictMode: true,
+			Match:      false,
+		},
+		{
+			Name:       "not contains matches missing substring",
+			Expression: "Role not contains admin",
+			Role:       "user",
+			StrictMode: true,
+			Match:      true,
+		},
+		{
+			Name:       "not contains rejects collection",
+			Expression: "Role not contains admin",
+			Role:       []string{"admin", "foo"},
+			StrictMode: true,
+			WantErr:    `contains operator only works on strings in strict operator types mode, not slice for selector: "Role"`,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.Name, func(t *testing.T) {
+			t.Parallel()
+
+			expr, err := CreateEvaluator(tc.Expression, WithStrictOperatorTypes(tc.StrictMode))
+			require.NoError(t, err)
+
+			match, err := expr.Evaluate(tc)
+			if tc.WantErr != "" {
+				require.EqualError(t, err, tc.WantErr)
+				require.False(t, match)
+				return
+			}
+
+			require.NoError(t, err)
+			require.Equal(t, tc.Match, match)
+		})
 	}
 }
 
