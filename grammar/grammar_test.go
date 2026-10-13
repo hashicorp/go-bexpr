@@ -1,4 +1,4 @@
-// Copyright IBM Corp. 2019, 2025
+// Copyright IBM Corp. 2019, 2026
 // SPDX-License-Identifier: MPL-2.0
 
 package grammar
@@ -70,12 +70,12 @@ func TestExpressionParsing(t *testing.T) {
 		},
 		"Match Contains": {
 			input:    "bar contains foo",
-			expected: &MatchExpression{Selector: Selector{Type: SelectorTypeBexpr, Path: []string{"bar"}}, Operator: MatchIn, Value: &MatchValue{Raw: "foo"}},
+			expected: &MatchExpression{Selector: Selector{Type: SelectorTypeBexpr, Path: []string{"bar"}}, Operator: MatchContains, Value: &MatchValue{Raw: "foo"}},
 			err:      "",
 		},
 		"Match Not Contains": {
 			input:    "bar not contains foo",
-			expected: &MatchExpression{Selector: Selector{Type: SelectorTypeBexpr, Path: []string{"bar"}}, Operator: MatchNotIn, Value: &MatchValue{Raw: "foo"}},
+			expected: &MatchExpression{Selector: Selector{Type: SelectorTypeBexpr, Path: []string{"bar"}}, Operator: MatchNotContains, Value: &MatchValue{Raw: "foo"}},
 			err:      "",
 		},
 		"Match Matches": {

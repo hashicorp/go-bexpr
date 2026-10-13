@@ -1,4 +1,4 @@
-// Copyright IBM Corp. 2019, 2025
+// Copyright IBM Corp. 2019, 2026
 // SPDX-License-Identifier: MPL-2.0
 
 // Package bexpr is an implementation of a generic boolean expression evaluator.
@@ -28,13 +28,14 @@ type Evaluator struct {
 	valueTransformationHook ValueTransformationHookFn
 	unknownVal              *interface{}
 	expression              string
+	strictOperatorTypes     bool
 }
 
 // CreateEvaluator is used to create and configure a new Evaluator, the expression
 // will be used by the evaluator when evaluating against any supplied datum.
 // By default the evaluator will error after 2 million expressions.
 // The following Option types are supported:
-// WithHookFn, WithMaxExpressions, WithTagName, WithUnknownValue.
+// WithHookFn, WithMaxExpressions, WithTagName, WithUnknownValue, WithStrictOperatorTypes
 func CreateEvaluator(expression string, opts ...Option) (*Evaluator, error) {
 	parsedOpts := getOpts(opts...)
 	var parserOpts []grammar.Option
@@ -56,6 +57,7 @@ func CreateEvaluator(expression string, opts ...Option) (*Evaluator, error) {
 		valueTransformationHook: parsedOpts.withHookFn,
 		unknownVal:              parsedOpts.withUnknown,
 		expression:              expression,
+		strictOperatorTypes:     parsedOpts.withStrictOperatorTypes,
 	}
 
 	return eval, nil
@@ -68,6 +70,7 @@ func (eval *Evaluator) Evaluate(datum interface{}) (bool, error) {
 	opts := []Option{
 		WithTagName(eval.tagName),
 		WithHookFn(eval.valueTransformationHook),
+		WithStrictOperatorTypes(eval.strictOperatorTypes),
 	}
 	if eval.unknownVal != nil {
 		opts = append(opts, WithUnknownValue(*eval.unknownVal))

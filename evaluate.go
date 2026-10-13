@@ -105,7 +105,7 @@ func doMatchEqual(expression *grammar.MatchExpression, value reflect.Value) (boo
 	return eqFn(matchValue, value), nil
 }
 
-func doMatchIn(expression *grammar.MatchExpression, value reflect.Value) (bool, error) {
+func doMatchIn(expression *grammar.MatchExpression, value reflect.Value, strictOperatorTypes bool) (bool, error) {
 	matchValue, err := getMatchExprValue(expression, value.Kind())
 	if err != nil {
 		return false, fmt.Errorf("error getting match value in expression: %w", err)
@@ -186,11 +186,33 @@ func doMatchIn(expression *grammar.MatchExpression, value reflect.Value) (bool, 
 		}
 
 	case reflect.String:
+		// In strict operator types mode, "in" and "not in" only support collection membership.
+		if strictOperatorTypes {
+			return false, fmt.Errorf(
+				"cannot perform substring match with 'in' operator in strict operator types mode for selector: %q", expression.Selector)
+		}
 		return strings.Contains(value.String(), matchValue.(string)), nil
 
 	default:
 		return false, fmt.Errorf("cannot perform in/contains operations on type %s for selector: %q", kind, expression.Selector)
 	}
+}
+
+func doMatchContains(expression *grammar.MatchExpression, value reflect.Value, strictOperatorTypes bool) (bool, error) {
+
+	// When strict operator types are disabled, fall back to the original behavior.
+	if !strictOperatorTypes {
+		return doMatchIn(expression, value, strictOperatorTypes)
+	}
+	if value.Kind() != reflect.String {
+		return false, fmt.Errorf("contains operator only works on strings in strict operator types mode, not %s for selector: %q", value.Kind(), expression.Selector)
+	}
+
+	matchValue, err := getMatchExprValue(expression, reflect.String)
+	if err != nil {
+		return false, fmt.Errorf("error getting match value in expression: %w", err)
+	}
+	return strings.Contains(value.String(), matchValue.(string)), nil
 }
 
 func doMatchIsEmpty(matcher *grammar.MatchExpression, value reflect.Value) (bool, error) {
@@ -348,6 +370,7 @@ func getValue(datum interface{}, path []string, opt ...Option) (interface{}, boo
 }
 
 func evaluateMatchExpression(expression *grammar.MatchExpression, datum interface{}, opt ...Option) (bool, error) {
+	opts := getOpts(opt...)
 	val, present, err := getValue(
 		datum,
 		expression.Selector.Path,
@@ -381,9 +404,17 @@ func evaluateMatchExpression(expression *grammar.MatchExpression, datum interfac
 		}
 		return false, err
 	case grammar.MatchIn:
-		return doMatchIn(expression, rvalue)
+		return doMatchIn(expression, rvalue, opts.withStrictOperatorTypes)
 	case grammar.MatchNotIn:
-		result, err := doMatchIn(expression, rvalue)
+		result, err := doMatchIn(expression, rvalue, opts.withStrictOperatorTypes)
+		if err == nil {
+			return !result, nil
+		}
+		return false, err
+	case grammar.MatchContains:
+		return doMatchContains(expression, rvalue, opts.withStrictOperatorTypes)
+	case grammar.MatchNotContains:
+		result, err := doMatchContains(expression, rvalue, opts.withStrictOperatorTypes)
 		if err == nil {
 			return !result, nil
 		}

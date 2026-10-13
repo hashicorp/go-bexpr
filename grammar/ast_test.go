@@ -34,6 +34,14 @@ func TestAST_Dump(t *testing.T) {
 			expr:     &MatchExpression{Selector: Selector{Type: SelectorTypeBexpr, Path: []string{"foo", "bar"}}, Operator: MatchNotIn, Value: &MatchValue{Raw: "baz"}},
 			expected: "Not In {\n   Selector: foo.bar\n   Value: \"baz\"\n}\n",
 		},
+		"MatchContains": {
+			expr:     &MatchExpression{Selector: Selector{Type: SelectorTypeBexpr, Path: []string{"foo", "bar"}}, Operator: MatchContains, Value: &MatchValue{Raw: "baz"}},
+			expected: "Contains {\n   Selector: foo.bar\n   Value: \"baz\"\n}\n",
+		},
+		"MatchNotContains": {
+			expr:     &MatchExpression{Selector: Selector{Type: SelectorTypeBexpr, Path: []string{"foo", "bar"}}, Operator: MatchNotContains, Value: &MatchValue{Raw: "baz"}},
+			expected: "Not Contains {\n   Selector: foo.bar\n   Value: \"baz\"\n}\n",
+		},
 		"MatchIsEmpty": {
 			expr:     &MatchExpression{Selector: Selector{Type: SelectorTypeBexpr, Path: []string{"foo", "bar"}}, Operator: MatchIsEmpty, Value: nil},
 			expected: "Is Empty {\n   Selector: foo.bar\n}\n",

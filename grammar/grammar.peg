@@ -135,10 +135,10 @@ MatchNotIn <- _ "not" _ "in" _ {
    return MatchNotIn, nil
 }
 MatchContains <- _ "contains" _ {
-   return MatchIn, nil
+   return MatchContains, nil
 }
 MatchNotContains <- _ "not" _ "contains" _ {
-   return MatchNotIn, nil
+   return MatchNotContains, nil
 }
 MatchMatches <- _ "matches" _ {
    return MatchMatches, nil
