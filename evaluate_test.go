@@ -4,6 +4,7 @@
 package bexpr
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"reflect"
@@ -504,6 +505,39 @@ var evaluateTests map[string]expressionTest = map[string]expressionTest{
 			{expression: "baz in foo", result: true},
 		},
 	},
+}
+
+func TestInSkipsNilInterfaceElements(t *testing.T) {
+	t.Parallel()
+
+	// JSON null becomes a nil interface element. A nil before the match
+	// used to panic inside doMatchIn; a nil after the match already worked.
+	cases := []struct {
+		name string
+		expr string
+		doc  string
+		want bool
+	}{
+		{name: "nil before match", expr: "1 in list", doc: `{"list":[null,1]}`, want: true},
+		{name: "nil after match", expr: "1 in list", doc: `{"list":[1,null]}`, want: true},
+		{name: "nil and no match", expr: "2 in list", doc: `{"list":[null,1]}`, want: false},
+		{name: "contains nil before match", expr: "list contains 1", doc: `{"list":[null,1]}`, want: true},
+		{name: "only nil", expr: "1 in list", doc: `{"list":[null]}`, want: false},
+		{name: "not in with a later miss", expr: "2 not in list", doc: `{"list":[null,1]}`, want: true},
+		{name: "not in with a later hit", expr: "1 not in list", doc: `{"list":[null,1]}`, want: false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			ev, err := CreateEvaluator(tc.expr)
+			require.NoError(t, err)
+			var datum map[string]interface{}
+			require.NoError(t, json.Unmarshal([]byte(tc.doc), &datum))
+			got, err := ev.Evaluate(datum)
+			require.NoError(t, err)
+			require.Equal(t, tc.want, got)
+		})
+	}
 }
 
 func TestEvaluate(t *testing.T) {
